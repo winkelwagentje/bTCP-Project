@@ -103,6 +103,38 @@ class BTCPClientSocket(BTCPSocket):
         each elif.
         """
         logger.debug("lossy_layer_segment_received called")
+
+        if len(segment) < 1018:
+            raise NotImplementedError("Segment not long enough handle not implemented")
+        else:
+            header, data = segment[:80], segment[80:]
+
+            # determine check_sum
+            segment_empty_checksum = segment[:64] + b'\x00'*2 + segment[80:]
+            segment_empty_checksum = [segment_empty_checksum[i:i+16] for i in range(len(segment) - 16)]
+
+            calc_checksum = 0
+
+            # carry around addition
+            for bits_16 in segment_empty_checksum:
+                bits_16 = int(bits_16.decode('utf-8'), 2)
+                calc_checksum += bits_16
+
+                if calc_checksum & 2**16 > 0:  # overflow
+                    calc_checksum -= 2**16
+                    calc_checksum += 1
+
+            # invert calc_checksum
+            calc_checksum = ~calc_checksum
+
+            seq_num, ack_num, flags, data_len, checksum = BTCPSocket.unpack_segment_header(header)
+
+
+
+            # TODO: SYN and FIN flags
+
+
+
         raise NotImplementedError("No implementation of lossy_layer_segment_received present. Read the comments & code of client_socket.py.")
 
 
