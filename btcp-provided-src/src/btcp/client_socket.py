@@ -127,7 +127,7 @@ class BTCPClientSocket(BTCPSocket):
             # invert calc_checksum
             calc_checksum = ~calc_checksum
 
-            seq_num, ack_num, flags, data_len, checksum = BTCPSocket.unpack_segment_header(header)
+            seq_num, ack_num, unused, flags, data_len, checksum = BTCPSocket.unpack_segment_header(header)
 
 
 
