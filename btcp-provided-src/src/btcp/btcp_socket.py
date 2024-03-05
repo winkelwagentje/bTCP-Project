@@ -24,11 +24,10 @@ class BTCPStates(IntEnum):
     ACCEPTING   = 1
     SYN_SENT    = 2
     SYN_RCVD    = 3
-    _           = 4 # There's an obvious state that goes here. Give it a name.
+    FIN_WAIT    = 4
     FIN_SENT    = 5
     CLOSING     = 6
-    __          = 7 # If you need more states, extend the Enum like this.
-    raise NotImplementedError("Check btcp_socket.py's BTCPStates enum. We left out some states you will need.")
+    Listen      = 7
 
 
 class BTCPSignals(IntEnum):
