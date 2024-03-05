@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import threading
 import logging
 from btcp.server_socket import BTCPServerSocket
 
@@ -19,27 +18,6 @@ from large_input import TEST_BYTES_85MIB
 
 
 logger = logging.getLogger(__name__)
-
-
-class CustomTimer:
-    def __init__(self, socket, time):
-        self.time = time
-        self.socket = socket
-        self.timer = None
-
-    def reset(self):
-        self.timer = threading.Timer(self.time, self.messg_interrupt)
-
-    def start(self):
-        self.timer = threading.Timer(self.time, self.messg_interrupt)
-
-    def stop(self):
-        if not self.timer is None:
-            self.timer = None
-
-    def messg_interrupt(self):
-        self.socket.lossy_layer_tick()
-        self.timer.reset()
 
 
 def btcp_file_transfer_server():
@@ -95,7 +73,6 @@ def btcp_file_transfer_server():
     # Create a bTCP server socket
     logger.info("Creating server socket")
     s = BTCPServerSocket(args.window, args.timeout)
-    timer = CustomTimer(s, time=args.timeout/1000)
 
     # Accept the connection. By default this doesn't actually do anything: our
     # rudimentary implementation relies on you starting the server before the
@@ -115,7 +92,6 @@ def btcp_file_transfer_server():
         logger.info("Receiving first chunk.")
         recvdata = s.recv()
         while recvdata:
-            timer.stop()
             logger.info("Writing chunk to output.")
             outfile.write(recvdata)
             # Read new data from the socket.
@@ -125,7 +101,6 @@ def btcp_file_transfer_server():
         # recv indicates disconnection, so if we exit the loop we can assume
         # disconnection. We then exit the with-block, automatically closing the
         # output file.
-        timer.start()
 
         logger.info("All chunks received")
 
