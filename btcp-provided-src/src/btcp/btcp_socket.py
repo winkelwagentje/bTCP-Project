@@ -57,18 +57,21 @@ class BTCPSocket:
 
 
     @staticmethod
-    def in_cksum(segment):
-        """Compute the internet checksum of the segment given as argument.
-        Consult lecture 3 for details.
-
-        Our bTCP implementation always has an even number of bytes in a segment.
-
-        Remember that, when computing the checksum value before *sending* the
-        segment, the checksum field in the header should be set to 0x0000, and
-        then the resulting checksum should be put in its place.
-        """
-        logger.debug("in_cksum() called")
-        raise NotImplementedError("No implementation of in_cksum present. Read the comments & code of btcp_socket.py.")
+    def in_cksum(segment):                              # calculates the internet checksum over the data
+                                                        # Signal nonsensical request (checksum of nothing?) with an exception.
+                                                        # where segment is assumed to be a bytes object.
+        if not segment:
+            raise ValueError("Asked to checksum an empty buffer.")
+        checksum = 0x0000
+        for i in range(0, len(segment), 2):              # consider two bytes each loop.
+            if i + 1 < len(segment):                     # case where there are 2 bytes or more left two take into the checksum
+                checksum += (segment[i] << 8) + segment[i + 1]
+            else:                                       # only 1 byte left to add to the checksum
+                checksum += segment[i] << 8
+            if checksum > 0xFFFF:                       # check if we have a carry out
+                checksum = (checksum & 0xFFFF) + 1      # bitmask the checksum to get rid of the carry, add 1 to the back.
+        return  ~checksum & 0xFFFF                      # invert bits at final step, combine it into a bytes object again
+                                                        # assuming the desired length of the checksum is 2 bytes.
 
 
     @staticmethod
@@ -77,9 +80,9 @@ class BTCPSocket:
 
         Mind that you change *what* signals that to the correct value(s).
         """
-        logger.debug("verify_cksum() called")
-        raise NotImplementedError("No implementation of in_cksum present. Read the comments & code of btcp_socket.py.")
-        return BTCPSocket.in_cksum(segment) == 0xABCD
+        head, checksum, tail = segment[:8], segment[8:10], segment[10:]
+        segment_with_zero_cksum = head + b'\x00\x00' + tail
+        return BTCPSocket.in_cksum(segment_with_zero_cksum) == checksum
 
 
     @staticmethod
