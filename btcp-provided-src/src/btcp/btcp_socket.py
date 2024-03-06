@@ -123,7 +123,7 @@ class BTCPSocket:
         """
         logger.debug("unpack_segment_header() called")
 
-        seq_num, ack_num, unused, flags, data_len, checksum = struct.unpack(">hhbbhh", header)
+        seq_num, ack_num, unused, flags, data_len, checksum = struct.unpack("!HHBBHH", header)
 
         logger.debug("unpack_segment_header() done")
 
