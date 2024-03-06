@@ -80,9 +80,7 @@ class BTCPSocket:
 
         Mind that you change *what* signals that to the correct value(s).
         """
-        head, checksum, tail = segment[:8], segment[8:10], segment[10:]
-        segment_with_zero_cksum = head + b'\x00\x00' + tail
-        return BTCPSocket.in_cksum(segment_with_zero_cksum) == checksum
+        return BTCPSocket.in_cksum(segment) == 0xFFFF
 
 
     @staticmethod
