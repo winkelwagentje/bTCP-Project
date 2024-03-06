@@ -111,7 +111,7 @@ class BTCPClientSocket(BTCPSocket):
 
             # determine check_sum
             segment_empty_checksum = segment[:64] + b'\x00'*2 + segment[80:]
-            segment_empty_checksum = [segment_empty_checksum[i:i+16] for i in range(len(segment) - 16)]
+            segment_empty_checksum = [segment_empty_checksum[i:i+16] for i in range(0, len(segment) - 16, 16)]
 
             calc_checksum = 0
 
