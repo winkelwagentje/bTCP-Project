@@ -114,8 +114,6 @@ class BTCPClientSocket(BTCPSocket):
         else:
             header, data = segment[:10], segment[10:]
             seq_num, ack_num, unused, flags, data_len, checksum = BTCPSocket.unpack_segment_header(header)
-            seq_num, ack_num, unused, flags, data_len, checksum = int(seq_num.decode()), int(ack_num.decode()), unused, flags.decode(), int(data_len.decode()), int(checksum.decode())
-            syn, ack, fin = int(flags[5]), int(flags[6]), int(flags[7])
             if not BTCPSocket.verify_checksum(header):
                 # TODO: handle the case where the checksum is not correct.
                 # probably just ignore / drop the packet.
