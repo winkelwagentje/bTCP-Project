@@ -43,7 +43,6 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("__init__ called")
         super().__init__(window, timeout)
-        self.state = BTCPSocket.CLOSED
         self._lossy_layer = LossyLayer(self, CLIENT_IP, CLIENT_PORT, SERVER_IP, SERVER_PORT)
 
         # The data buffer used by send() to send data from the application
@@ -52,8 +51,6 @@ class BTCPClientSocket(BTCPSocket):
         logger.info("Socket initialized with sendbuf size 1000")
 
 
-    def update_state(self, new_state):
-        self.state = new_state
 
 
     ###########################################################################
@@ -121,48 +118,42 @@ class BTCPClientSocket(BTCPSocket):
                 # probably just ignore / drop the packet.
                 pass
             else:
-                match self.state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
+                match super().state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
                     case BTCPSocket.CLOSED: # i think this state is redundant here
                         # TODO: handle
                         pass
-                    case BTCPSocket.SYN_SENT: # check if we received a segment where the syn and ack flags are set. sent ack.
+                    case BTCPStates.SYN_SENT: # check if we received a segment where the syn and ack flags are set. sent ack.
                         if flags & FIN: pass  # FIN flag is send and ignored
                         # TODO: handle
                         pass
-                    case BTCPSocket.ESTABLISHED:
+                    case BTCPStates.ESTABLISHED:
                         # TODO: handle
-                        if flags & SYN and flags & ACK:  # a SYN ACK is rcvd, ignore but send ACK
-                            snd_ack_num = seq_num + 1
-                            snd_seq_num = ack_num
-                            snd_flags = ACK
-                            snd_header = BTCPSocket.build_segment_header(segnum=ack_num, acknum=seq_num+1, ack_sent=True. window=window, length=data_len, checksum=checksum)
+                        if flags & SYN:
+                            if flags & ACK:  # a SYN ACK is rcvd, ignore but send ACK
+                                snd_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_sent=True. window=window, length=data_len, checksum=checksum) << 1008*8
 
-                            snd_data = "\x00"*126 + ack_num  # ACK padded with 0
-                            self._lossy_layer.send_segment()
-                            # TODO: send ACK
-                            pass
-                        elif flags & SYN:  # SYN flas is send
-                            # This is ignored
-                            pass
+                                snd_data = "\x00"*1018 # TODO: dubbel check
+                                self._lossy_layer.send_segment(snd_header + snd_data)
+                            else: # SYN flas is send
+                                # This is ignored
+                                pass
                         elif flags & FIN:  # FIN flag is send
-                            # TODO: handle start of FIN handshake
-                            pass
-                        elif flags & ACK:  # ACK flag is send
+                            if flags & ACK:
+                                # TODO: handle FIN ACK rcvd
+                                pass
+                            else:
+                                # The server can not FIN the conversation
+                                # Thus we ignore this message
+                                pass
+                        elif flags & ACK:  # ACK flag is send, no SYN or FIN
                             # TODO: handle ACK-message
                             pass
                         # This is only data of the server but we ignore this
                         pass
-                    case BTCPSocket.FIN_SENT:
+                    case BTCPStates.FIN_SENT:
                         if flags & SYN:  pass  # SYN flag is send and ignored
                         # TODO: handle
                         pass
-
-
-
-
-            # TODO: SYN and FIN flags
-
-
 
         raise NotImplementedError("No implementation of lossy_layer_segment_received present. Read the comments & code of client_socket.py.")
 

@@ -125,27 +125,50 @@ class BTCPServerSocket(BTCPSocket):
         logger.debug(segment)
         raise NotImplementedError("Only rudimentary implementation of lossy_layer_segment_received present. Read the comments & code of server_socket.py, then remove the NotImplementedError.")
 
-        # match ... case is available since Python 3.10
-        # Note, this is *not* the same as a "switch" statement from other
-        # languages. There is no "fallthrough" behaviour, so no breaks.
-        match self._state:
-            case BTCPStates.CLOSED:
-                self._closed_segment_received(segment)
-            case BTCPStates.CLOSING:
-                self._closing_segment_received(segment)
-            case _:
-                self._other_segment_received(segment)
+        SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
 
-        # If you don't have Python 3.10, the following if ... elif ... else
-        # is an equivalent option.
-        #if self._state == BTCPStates.CLOSED:
-        #    self._closed_segment_received(segment)
-        #elif self._state == BTCPStates.CLOSING:
-        #    self._closing_segment_received(segment)
-        #else:
-        #    logger.info("Segment received in %s state",
-        #                self._state)
-        #    self._other_segment_received(segment)
+        f not len(segment) == 1018:
+            raise NotImplementedError("Segment not long enough handle not implemented")
+        else:
+            header, data = segment[:10], segment[10:]
+            seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
+            if not BTCPSocket.verify_checksum(header):
+                # TODO: handle the case where the checksum is not correct.
+                # probably just ignore / drop the packet.
+                pass
+            else:
+                match super()._state:
+                    case BTCPStates.CLOSED:  # TODO: niet naar gekeken
+                        self._closed_segment_received(segment)  # TODO: ff naar kijken
+                    case BTCPStates.CLOSING: 
+                        if flags == FIN:
+                            # TODO: send FIN ACK
+                        if flags == ACK:
+                            super().update_state(BTCPStates.CLOSED)
+                        # for now we ignore past FIN recieved segments
+                        self._closing_segment_received(segment)
+                    case BTCPStates.ACCEPTING:
+                        if flags == SYN: 
+                            # TODO: send SYN ACK
+                            pass
+                    case BTCPStates.SYN_RCVD:
+                        if flags == SYN:
+                            # TODO: send SYN ACK
+                            pass
+                        elif flags == ACK:  # TODO: check val ack
+                            super().update_state(BTCPStates.ESTABLISHED)
+                    case BTCPStates.ESTABLISHED:
+                        if flags == FIN:
+                            #  TODO: handle FIN, send FIN ACK
+                            pass
+                        elif flags & (SYN + ACK):  # rcv a SYN or ACK
+                            # ignore
+                            pass
+                        else:
+                            # TODO: is seg is in order return an ACK
+                    case _:  # TODO: niet naar gekeken
+                        self._other_segment_received(segment)
+
 
         self._expire_timers()
         return

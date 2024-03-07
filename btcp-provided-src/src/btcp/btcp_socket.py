@@ -56,6 +56,8 @@ class BTCPSocket:
         logger.debug("Socket initialized with window %i and timeout %i",
                      self._window, self._timeout)
 
+    def update_state(self, new_state):
+        self._state = new_state
 
     @staticmethod
     def in_cksum(segment):                              # calculates the internet checksum over the data
