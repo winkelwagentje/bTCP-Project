@@ -115,7 +115,7 @@ class BTCPClientSocket(BTCPSocket):
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
             header, data = segment[:10], segment[10:]
-            seq_num, ack_num, unused, flags, data_len, checksum = BTCPSocket.unpack_segment_header(header)
+            seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
             if not BTCPSocket.verify_checksum(header):
                 # TODO: handle the case where the checksum is not correct.
                 # probably just ignore / drop the packet.
@@ -131,16 +131,26 @@ class BTCPClientSocket(BTCPSocket):
                         pass
                     case BTCPSocket.ESTABLISHED:
                         # TODO: handle
-                        if flags & SYN: pass  # SYN flag is send and ignored
+                        if flags & SYN and flags & ACK:  # a SYN ACK is rcvd, ignore but send ACK
+                            snd_ack_num = seq_num + 1
+                            snd_seq_num = ack_num
+                            snd_flags = ACK
+                            snd_header = BTCPSocket.build_segment_header(segnum=ack_num, acknum=seq_num+1, ack_sent=True. window=window, length=data_len, checksum=checksum)
+
+                            snd_data = "\x00"*126 + ack_num  # ACK padded with 0
+                            self._lossy_layer.send_segment()
+                            # TODO: send ACK
+                            pass
+                        elif flags & SYN:  # SYN flas is send
+                            # This is ignored
+                            pass
                         elif flags & FIN:  # FIN flag is send
                             # TODO: handle start of FIN handshake
                             pass
                         elif flags & ACK:  # ACK flag is send
                             # TODO: handle ACK-message
                             pass
-                        else:
-                            # TODO: handle no-flag message
-                            pass
+                        # This is only data of the server but we ignore this
                         pass
                     case BTCPSocket.FIN_SENT:
                         if flags & SYN:  pass  # SYN flag is send and ignored
