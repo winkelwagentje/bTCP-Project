@@ -109,6 +109,8 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
 
+        SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
+
         if not len(segment) == 1018:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
@@ -124,12 +126,24 @@ class BTCPClientSocket(BTCPSocket):
                         # TODO: handle
                         pass
                     case BTCPSocket.SYN_SENT: # check if we received a segment where the syn and ack flags are set. sent ack.
+                        if flags & FIN: pass  # FIN flag is send and ignored
                         # TODO: handle
                         pass
                     case BTCPSocket.ESTABLISHED:
                         # TODO: handle
+                        if flags & SYN: pass  # SYN flag is send and ignored
+                        elif flags & FIN:  # FIN flag is send
+                            # TODO: handle start of FIN handshake
+                            pass
+                        elif flags & ACK:  # ACK flag is send
+                            # TODO: handle ACK-message
+                            pass
+                        else:
+                            # TODO: handle no-flag message
+                            pass
                         pass
                     case BTCPSocket.FIN_SENT:
+                        if flags & SYN:  pass  # SYN flag is send and ignored
                         # TODO: handle
                         pass
 
