@@ -123,11 +123,8 @@ class BTCPSocket:
         tupling, so it's easy to simply return all of them in one go rather
         than make a separate method for every individual field.
         """
-        logger.debug("unpack_segment_header() called")
+        seq_num, acknum, flag_byte, window, length, checksum = struct.unpack("!HHBBHH", header)
+        flag_byte = flag_byte & 0b111
 
-        seq_num, ack_num, flags, window_size, data_len, checksum = struct.unpack("!HHBBHH", header)
-
-        logger.debug("unpack_segment_header() done")
-
-        return int(seq_num.decode(), 2), int(ack_num.decode(), 2), int((flags & 0b111).decode(), 2), int(window_size.decode(), 2), int(data_len.decode(), 2), int(checksum.decode(), 2)
+        return seq_num, acknum, flag_byte, window, length, checksum
 
