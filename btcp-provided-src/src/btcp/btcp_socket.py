@@ -27,7 +27,8 @@ class BTCPStates(IntEnum):
     FIN_WAIT    = 4
     FIN_SENT    = 5
     CLOSING     = 6
-    Listen      = 7
+    LISTEN      = 7
+    ESTABLISHED = 8
 
 
 class BTCPSignals(IntEnum):

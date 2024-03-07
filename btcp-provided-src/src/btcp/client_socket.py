@@ -43,12 +43,17 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("__init__ called")
         super().__init__(window, timeout)
+        self.state = BTCPSocket.CLOSED
         self._lossy_layer = LossyLayer(self, CLIENT_IP, CLIENT_PORT, SERVER_IP, SERVER_PORT)
 
         # The data buffer used by send() to send data from the application
         # thread into the network thread. Bounded in size.
         self._sendbuf = queue.Queue(maxsize=1000)
         logger.info("Socket initialized with sendbuf size 1000")
+
+
+    def update_state(self, new_state):
+        self.state = new_state
 
 
     ###########################################################################
@@ -113,7 +118,21 @@ class BTCPClientSocket(BTCPSocket):
                 # TODO: handle the case where the checksum is not correct.
                 # probably just ignore / drop the packet.
                 pass
-            
+            else:
+                match self.state:
+                    case BTCPSocket.CLOSED: # i think this state is redundant here
+                        # TODO: handle
+                        pass
+                    case BTCPSocket.SYN_SENT:
+                        # TODO: handle
+                        pass
+                    case BTCPSocket.ESTABLISHED:
+                        # TODO: handle
+                        pass
+                    case BTCPSocket.FIN_SENT:
+                        # TODO: handle
+                        pass
+
 
 
 
