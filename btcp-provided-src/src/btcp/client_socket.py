@@ -112,18 +112,20 @@ class BTCPClientSocket(BTCPSocket):
         if not len(segment) == 1018:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
-            header, data = segment[:80], segment[80:]
+            header, data = segment[:10], segment[10:]
             seq_num, ack_num, unused, flags, data_len, checksum = BTCPSocket.unpack_segment_header(header)
+            seq_num, ack_num, unused, flags, data_len, checksum = int(seq_num.decode()), int(ack_num.decode()), unused, flags.decode(), int(data_len.decode()), int(checksum.decode())
+            syn, ack, fin = int(flags[5]), int(flags[6]), int(flags[7])
             if not BTCPSocket.verify_checksum(header):
                 # TODO: handle the case where the checksum is not correct.
                 # probably just ignore / drop the packet.
                 pass
             else:
-                match self.state:
+                match self.state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
                     case BTCPSocket.CLOSED: # i think this state is redundant here
                         # TODO: handle
                         pass
-                    case BTCPSocket.SYN_SENT:
+                    case BTCPSocket.SYN_SENT: # check if we received a segment where the syn and ack flags are set. sent ack.
                         # TODO: handle
                         pass
                     case BTCPSocket.ESTABLISHED:
