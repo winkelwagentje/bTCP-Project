@@ -125,9 +125,9 @@ class BTCPSocket:
         """
         logger.debug("unpack_segment_header() called")
 
-        seq_num, ack_num, unused, flags, data_len, checksum = struct.unpack("!HHBBHH", header)
+        seq_num, ack_num, flags, window_size, data_len, checksum = struct.unpack("!HHBBHH", header)
 
         logger.debug("unpack_segment_header() done")
 
-        return seq_num, ack_num, unused, flags, data_len, checksum
+        return int(seq_num.decode(), 2), int(ack_num.decode(), 2), int((flags & 0b111).decode(), 2), int(window_size.decode(), 2), int(data_len.decode(), 2), int(checksum.decode(), 2)
 
