@@ -23,7 +23,7 @@ class PacketHandler(ABC):
             
             for seg in self.build_seg_queue(self, list(pkt_queue)):
                 self.seg_queue.put(seg)
-            self.send_window_seqments(self, seg_queue) 
+            self.send_window_seqments(self) 
 
             return None
 
