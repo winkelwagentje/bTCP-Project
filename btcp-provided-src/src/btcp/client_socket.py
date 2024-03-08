@@ -108,10 +108,10 @@ class BTCPClientSocket(BTCPSocket):
 
         SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
 
-        if not len(segment) == 1018:
+        if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
-            header, data = segment[:10], segment[10:]
+            header, data = segment[:HEADER_SIZE], segment[HEADER_SIZE:]
             seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
             if not BTCPSocket.verify_checksum(header):
                 # TODO: handle the case where the checksum is not correct.
@@ -130,9 +130,9 @@ class BTCPClientSocket(BTCPSocket):
                         # TODO: handle
                         if flags & SYN:
                             if flags & ACK:  # a SYN ACK is rcvd, ignore but send ACK
-                                snd_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_sent=True, window=window, length=data_len, checksum=checksum) << 1008*8
+                                snd_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_sent=True, window=window, length=data_len, checksum=checksum) << PAYLOAD_SIZE*8
 
-                                snd_data = "\x00"*1018 # TODO: dubbel check
+                                snd_data = "\x00"*SEGMENT_SIZE # TODO: dubbel check
                                 self._lossy_layer.send_segment(snd_header + snd_data)
                             else: # SYN flas is send
                                 # This is ignored
