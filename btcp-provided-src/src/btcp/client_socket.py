@@ -130,7 +130,7 @@ class BTCPClientSocket(BTCPSocket):
                         # TODO: handle
                         if flags & SYN:
                             if flags & ACK:  # a SYN ACK is rcvd, ignore but send ACK
-                                snd_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_sent=True. window=window, length=data_len, checksum=checksum) << 1008*8
+                                snd_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_sent=True, window=window, length=data_len, checksum=checksum) << 1008*8
 
                                 snd_data = "\x00"*1018 # TODO: dubbel check
                                 self._lossy_layer.send_segment(snd_header + snd_data)
