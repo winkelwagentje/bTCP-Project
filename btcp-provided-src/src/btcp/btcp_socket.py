@@ -83,7 +83,7 @@ class BTCPSocket:
 
         Mind that you change *what* signals that to the correct value(s).
         """
-        return BTCPSocket.in_cksum(segment) == 0xFFFF
+        return BTCPSocket.in_cksum(segment) == 0x0000
 
 
     @staticmethod
