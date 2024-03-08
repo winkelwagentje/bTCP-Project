@@ -61,12 +61,26 @@ class PacketHandler(ABC):
         def handle_ack(self, seq_field, ack_field, payload):
             pass 
 
+
         @abstractmethod
         def handle_data(self, seq_field, ack_field, payload):
+            '''
+            
+            '''
             pass 
 
         @abstractmethod
-        def build_ack_queue(self):
+        def build_ack_queue(self):  
+            ''' 
+            the purpose of the ack queue is holding the acknumbers of the to be expected acks
+            if the received ack is not equal to the first element in the queue with acks, the packets are out of order.
+            Though, this function just builds the ack queue.
+            '''
             pass
 
-
+        @abstractmethod
+        def handle_ack_queue(self):
+            '''
+            updates the ack queue when elements are popped, and pushes ack numbers onto them.
+            '''
+            pass
