@@ -59,13 +59,22 @@ class PacketHandler(ABC):
 
         @abstractmethod
         def handle_ack(self, seq_field, ack_field, payload):
+            """
+            This function handles incoming messages with an ACK flag. It checks if the ACK is in order.
+            If it is the send_base, and the ack_queue is updated in handle_ack_queue.
+            If it is not in order this is handled based on the sprecific handler implementation.
+            """
             pass 
 
 
         @abstractmethod
         def handle_data(self, seq_field, ack_field, payload):
             '''
-            
+            This function handles incomming messages without an ACK flag, and thus this is a segment with data.
+            If the data segment is in-order then this segment or possibly a buffer of data (depending on the specific handler) 
+            is send back, the socket may assume all data recieved from the packet_handler is in order.
+            If the data segment in out of order the way to handle is handler specific.
+            There is also an ACK send, which again is based on the specific handler.
             '''
             pass 
 
