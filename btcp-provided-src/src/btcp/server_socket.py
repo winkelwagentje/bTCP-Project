@@ -127,10 +127,10 @@ class BTCPServerSocket(BTCPSocket):
 
         SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
 
-        f not len(segment) == 1018:
+        f not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
-            header, data = segment[:10], segment[10:]
+            header, data = segment[:HEADER_SIZE], segment[HEADER_SIZE:]
             seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
             if not BTCPSocket.verify_checksum(header):
                 # TODO: handle the case where the checksum is not correct.
