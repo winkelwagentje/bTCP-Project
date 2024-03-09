@@ -29,7 +29,7 @@ class PacketHandler(ABC):
             return None
 
 
-        def handle_rcvd_seg(self, seq_field, ack_field, ACK, payload: bytes) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
+        def handle_rcvd_seg(self, seq_field: bytes, ack_field: bytes, ACK, payload: bytes) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
             """ 
             A segment is recieved by a socket and unpacked. The payload and part of the unpacked header
             is given as input. This is handled by the specific instance of the handler. This function returns
@@ -59,7 +59,7 @@ class PacketHandler(ABC):
             pass 
 
         @abstractmethod
-        def handle_ack(self, seq_field, ack_field, payload):
+        def handle_ack(self, ack_field: bytes):
             """
             This function handles incoming messages with an ACK flag. It checks if the ACK is in order.
             If it is the send_base, and the ack_queue is updated in handle_ack_queue.

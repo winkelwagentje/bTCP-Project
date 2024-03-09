@@ -46,8 +46,18 @@ class GBN(PacketHandler):
 
         return
 
-    def handle_ack(self):
+    def handle_ack(self, ack_field: bytes):
         # Implement the logic to handle acknowledgment for GBN
+
+        if self.ack_queue.qsize() > 0:
+            expected_ack = self.ack_queue.queue[0]
+            if int(ack_field,2) >= expected_ack:  # in-order ack
+                # TODO: HANDLE ACK QUEUE FUNCTION
+                return
+
+        # out-of-order ack
+        # now a timer must wait and at time-out window will be send again
+
         pass 
 
     def handle_data(self):
