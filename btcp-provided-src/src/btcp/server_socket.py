@@ -127,7 +127,7 @@ class BTCPServerSocket(BTCPSocket):
 
         SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
 
-        f not len(segment) == SEGMENT_SIZE:
+        if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
             header, data = segment[:HEADER_SIZE], segment[HEADER_SIZE:]
@@ -143,6 +143,7 @@ class BTCPServerSocket(BTCPSocket):
                     case BTCPStates.CLOSING: 
                         if flags == FIN:
                             # TODO: send FIN ACK
+                            pass
                         if flags == ACK:
                             super().update_state(BTCPStates.CLOSED)
                         # for now we ignore past FIN recieved segments
@@ -166,6 +167,7 @@ class BTCPServerSocket(BTCPSocket):
                             pass
                         else:
                             # TODO: is seg is in order return an ACK
+                            pass
                     case _:  # TODO: niet naar gekeken
                         self._other_segment_received(segment)
 
