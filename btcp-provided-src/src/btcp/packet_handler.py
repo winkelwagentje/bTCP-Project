@@ -10,6 +10,10 @@ class PacketHandler(ABC):
         self.current_SN = ISN + 1                   # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
         self.expected_ACK_queue = queue.Queue()     # ack queue keeps track of the acks to be received, and in the specified order
         self.seg_queue = queue.Queue()
+        self.sender_ISN = 0    # initialized to 0 but is updated in the handshake to the 
+                               # to the ISN of the other party.
+        self.last_received = self.sender_ISN  # last_received is the sequence number of the last received segment
+                                
 
 
         def send_data(self, data: bytes) -> None:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
@@ -79,7 +83,7 @@ class PacketHandler(ABC):
             pass 
 
         @abstractmethod
-        def build_ack_queue(self):  
+        def build_ack_queue(self) -> None:  
             ''' 
             the purpose of the ack queue is holding the acknumbers of the to be expected acks
             if the received ack is not equal to the first element in the queue with acks, the packets are out of order.
@@ -88,8 +92,19 @@ class PacketHandler(ABC):
             pass
 
         @abstractmethod
-        def handle_ack_queue(self):
+        def push_ack_queue(self, seq_num: int) -> None:
             '''
-            updates the ack queue when elements are popped, and pushes ack numbers onto them.
+            This function is called when new segments are to be pushed onto the seg_queue
+            It takes an integer and pushes it onto the ack_queue
+            '''
+            pass
+
+        
+        @abstractmethod
+        def acknowledge_number(self, seq_num: int) -> None:
+            '''
+            This function acknowledges the packet 'segment',
+            so it does some operations on the ack_queue, depending
+            on which protocol (GBN, SR, TCP) is used.
             '''
             pass
