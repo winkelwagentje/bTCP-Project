@@ -42,7 +42,7 @@ class PacketHandler(ABC):
 
 
         @abstractmethod
-        def build_seg_queue(self, pkt_list):
+        def build_seg_queue(self, pkt_list: list[bytes]) -> Queue[bytes]:
             """
             This function constructs a queue of segments. These segments are constructed by the 
             specific handler and based on the data. 
@@ -50,7 +50,7 @@ class PacketHandler(ABC):
             pass
 
         @abstractmethod
-        def send_window_seqments(self):
+        def send_window_segments(self) -> None:
             """
             This functions sends all segments within the window which the specific handler decides
             to send. This function needs to be called every time the send_base is updated and when
