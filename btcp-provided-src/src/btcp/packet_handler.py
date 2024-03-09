@@ -5,11 +5,12 @@ from btcp_socket import BTCPSocket
 
 
 class PacketHandler(ABC):
-    def __init__(self, window_size, handler_type, ISN=0):
+    def __init__(self, window_size, handler_type, lossy_layer, ISN=0):
         self.send_base = 0                          # send base is the head of the window; ie the index of the first element in the window to be send
         self.current_SN = ISN + 1                   # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
         self.expected_ACK_queue = queue.Queue()     # ack queue keeps track of the acks to be received, and in the specified order
         self.seg_queue = queue.Queue()
+        self.lossy_layer = lossy_layer
 
 
         def send_data(self, data: bytes) -> None:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
