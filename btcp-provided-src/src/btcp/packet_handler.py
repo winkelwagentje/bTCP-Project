@@ -5,15 +5,19 @@ from btcp_socket import BTCPSocket
 
 
 class PacketHandler(ABC):
-    def __init__(self, window_size, handler_type, ISN=0):
+    def __init__(self, window_size, handler_type, lossy_layer, ISN=0):
         self.send_base = 0                          # send base is the head of the window; ie the index of the first element in the window to be send
         self.current_SN = ISN + 1                   # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
         self.expected_ACK_queue = queue.Queue()     # ack queue keeps track of the acks to be received, and in the specified order
         self.seg_queue = queue.Queue()
+<<<<<<< HEAD
         self.sender_ISN = 0    # initialized to 0 but is updated in the handshake to the 
                                # to the ISN of the other party.
         self.last_received = self.sender_ISN  # last_received is the sequence number of the last received segment
                                 
+=======
+        self.lossy_layer = lossy_layer
+>>>>>>> caa628ceca42daa60aef0d53ca58361fe6047553
 
 
         def send_data(self, data: bytes) -> None:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
@@ -32,7 +36,7 @@ class PacketHandler(ABC):
             return None
 
 
-        def handle_rcvd_seg(self, seq_field, ack_field, ACK, payload: bytes) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
+        def handle_rcvd_seg(self, seq_field: bytes, ack_field: bytes, ACK, payload: bytes) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
             """ 
             A segment is recieved by a socket and unpacked. The payload and part of the unpacked header
             is given as input. This is handled by the specific instance of the handler. This function returns
@@ -45,7 +49,7 @@ class PacketHandler(ABC):
 
 
         @abstractmethod
-        def build_seg_queue(self, pkt_list):
+        def build_seg_queue(self, pkt_list: list[bytes]) -> Queue[bytes]:
             """
             This function constructs a queue of segments. These segments are constructed by the 
             specific handler and based on the data. 
@@ -53,7 +57,7 @@ class PacketHandler(ABC):
             pass
 
         @abstractmethod
-        def send_window_seqments(self):
+        def send_window_segments(self) -> None:
             """
             This functions sends all segments within the window which the specific handler decides
             to send. This function needs to be called every time the send_base is updated and when
@@ -62,7 +66,7 @@ class PacketHandler(ABC):
             pass 
 
         @abstractmethod
-        def handle_ack(self, seq_field, ack_field, payload):
+        def handle_ack(self, ack_field: bytes):
             """
             This function handles incoming messages with an ACK flag. It checks if the ACK is in order.
             If it is the send_base, and the ack_queue is updated in handle_ack_queue.
