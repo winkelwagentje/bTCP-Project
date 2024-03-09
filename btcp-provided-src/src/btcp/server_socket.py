@@ -123,7 +123,6 @@ class BTCPServerSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
         logger.debug(segment)
-        raise NotImplementedError("Only rudimentary implementation of lossy_layer_segment_received present. Read the comments & code of server_socket.py, then remove the NotImplementedError.")
 
         SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
 
@@ -330,7 +329,16 @@ class BTCPServerSocket(BTCPSocket):
         this project.
         """
         logger.debug("accept called")
-        raise NotImplementedError("No implementation of accept present. Read the comments & code of server_socket.py.")
+
+        if self._state != BTCPStates.CLOSED:
+            logger.debug(f"accept was called, but the server was not in the CLOSED state. Server is in {super().state} instead")
+            logger.debug("accept performed.")
+        
+        self._state = BTCPStates.ACCEPTING
+        while self._state != BTCPStates.CLOSED and self._state != BTCPStates.ESTABLISHED:
+            time.sleep(0.1)
+
+        logger.debug("accept performed.")
 
 
     def recv(self):
