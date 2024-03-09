@@ -13,20 +13,19 @@ class GBN(PacketHandler):
         seg_queue = queue.Queue()
 
         for pkt in pkt_list:
-            if ceil(len(pkt)/8) > PAYLOAD_SIZE:  # data payload exceeds the allocated space for data
+            if len(pkt) > PAYLOAD_SIZE:  # data payload exceeds the allocated space for data
                 raise ValueError(f"data field of bTCP segment may contain a maximum of {PAYLOAD_SIZE} bytes.")
 
-            padded_pkt = pkt + b'0'*(len(pkt) - PAYLOAD_SIZE*8)
+            padded_pkt = pkt + bytes(PAYLOAD_SIZE - len(pkt))
             # initialize a header with checksum set to 0. acknum = 0 as ACK flag is false anyway.
-            # the length is the ceil(len(pkt)/8) as the pkt might not be divisible by 8. We assume there are leading 0's missing.
-            header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window, length=ceil(len(pkt)/8))
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window, length=len(pkt))
 
             # Now determine the checksum of the segment with the checksum field empty
-            segment = header + padded_pkt
+            segment = pseudo_header + padded_pkt
             checksum = BTCPSocket.in_cksum(segment)
 
             # Construct the final header and segment, with correct checksum
-            header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window, length=ceil(len(pkt)/8), checksum=checksum)
+            header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window, length=len(pkt), checksum=checksum)
             self.current_SN += 1
             segment = header + padded_pkt
 
