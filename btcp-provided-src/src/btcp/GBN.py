@@ -1,13 +1,8 @@
 from packet_handler import PacketHandler
-<<<<<<< HEAD
-from btcp_socket import BTCPSocket
-from constants import PAYLOAD_SIZE
-=======
 import queue
 from btcp_socket import BTCPSocket
 from constants import *
 from math import ceil
->>>>>>> caa628ceca42daa60aef0d53ca58361fe6047553
 
 class GBN(PacketHandler):
     def __init__(self, window_size, ISN=0):
