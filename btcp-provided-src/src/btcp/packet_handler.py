@@ -46,7 +46,7 @@ class PacketHandler(ABC):
 
 
         @abstractmethod
-        def build_seg_queue(self, pkt_list: list[bytes]) -> Queue[bytes]:
+        def build_seg_queue(self, pkt_list: list[bytes]) -> queue.Queue[bytes]:
             """
             This function constructs a queue of segments. These segments are constructed by the 
             specific handler and based on the data. 
@@ -93,7 +93,7 @@ class PacketHandler(ABC):
             pass
 
         @abstractmethod
-        def push_ack_queue(self, seq_num: int) -> None:
+        def update_ack_queue(self, seq_num: int) -> None:
             '''
             This function is called when new segments are to be pushed onto the seg_queue
             It takes an integer and pushes it onto the ack_queue
