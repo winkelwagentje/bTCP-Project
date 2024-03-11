@@ -1,7 +1,7 @@
 from btcp.btcp_socket import BTCPSocket, BTCPStates, BTCPSignals
 from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
-from GBN import GBN
+from btcp.GBN import GBN
 
 import queue
 import time
