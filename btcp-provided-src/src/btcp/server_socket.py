@@ -261,6 +261,7 @@ class BTCPServerSocket(BTCPSocket):
                 if self._SYN_tries > self._MAX_SYN_TRIES:
                     super().update_state(BTCPSocket.ACCEPTING)
                 else:
+                    self._SYN_tries += 1
                     # TODO else send SYN + ACK
                 pass
             case BTCPSocket.ESTABLISHED:
