@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 import queue
 from constants import PAYLOAD_SIZE
 from btcp_socket import BTCPSocket
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PacketHandler(ABC):
