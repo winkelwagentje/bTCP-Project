@@ -91,5 +91,5 @@ class GBN(PacketHandler):
                 break
 
     def timeout(self):
-        send_window_segments()
+        self.send_window_segments()
         

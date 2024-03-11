@@ -295,7 +295,11 @@ class BTCPServerSocket(BTCPSocket):
                     super().update_state(BTCPSocket.ACCEPTING)
                 else:
                     self._SYN_tries += 1
-                    # TODO else send SYN + ACK
+                    super().update_state(BTCPStates.SYN_RCVD)
+                    pseudo_header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=super().sender_SN+1, syn_set=True, ack_set=True, window=super()._window)
+                    header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=super().sender_SN+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+                    segment = header + bytes(PAYLOAD_SIZE)
+                    self._lossy_layer.send_segment(segment)
                 pass
             case BTCPSocket.ESTABLISHED:
                 # ignore
@@ -387,6 +391,7 @@ class BTCPServerSocket(BTCPSocket):
             logger.debug("accept performed.")
         
         self._state = BTCPStates.ACCEPTING
+        super()._ISN = super().reset_ISN()
         while self._state != BTCPStates.CLOSED and self._state != BTCPStates.ESTABLISHED:
             time.sleep(0.1)
 
