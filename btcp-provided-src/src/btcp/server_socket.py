@@ -217,6 +217,7 @@ class BTCPServerSocket(BTCPSocket):
             super().sender_SN = seq_num
             pseudo_header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=super()._window)
             header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+            self.packet_handler.current_SN += 1
             segment = header + bytes(PAYLOAD_SIZE)
             self._lossy_layer.send_segment(segment)
         return
@@ -260,6 +261,12 @@ class BTCPServerSocket(BTCPSocket):
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         if flags & 7 == 2: # ack
             super().update_state(BTCPStates.ESTABLISHED)
+        elif flags & 7 == 4 and seq_num == super().sender_SN: # syn
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=super()._window)
+            header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+            self.packet_handler.current_SN += 1
+            segment = header + bytes(PAYLOAD_SIZE)
+            self._lossy_layer.send_segment(segment)
         
     def _established_segment_received(self, segment):
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
