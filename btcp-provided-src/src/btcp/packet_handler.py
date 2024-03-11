@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 import queue
-from constants import PAYLOAD_SIZE
-from btcp_socket import BTCPSocket
+from btcp.constants import PAYLOAD_SIZE
+from btcp.btcp_socket import BTCPSocket
 import logging
-from constants import *
+from btcp.constants import *
 
 logger = logging.getLogger(__name__)
 

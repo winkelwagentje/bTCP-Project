@@ -1,8 +1,8 @@
-from packet_handler import PacketHandler
+from btcp.packet_handler import PacketHandler
 import queue
 from queue import Queue
-from btcp_socket import BTCPSocket
-from constants import *
+from btcp.btcp_socket import BTCPSocket
+from btcp.constants import *
 from math import ceil
 
 class GBN(PacketHandler):
