@@ -257,9 +257,21 @@ class BTCPServerSocket(BTCPSocket):
         logger.debug("_syn_segment_received called")
         logger.info("Segment received in %s state",
                     self._state)
+        seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        if flags & 7 == 2: # ack
+            super().update_state(BTCPStates.ESTABLISHED)
         
     def _established_segment_received(self, segment):
-        pass
+        seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        if flags & 7 == 0:
+            self.packet_handler.handle_data(segment)
+        elif flags & 7 == 1 and seq_num == self.packet_handler.last_received + 1:
+            pseudo_header = BTCPSocket.build_segment_header(self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True)
+            header = BTCPSocket.build_segment_header(self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+            self.packet_handler.current_SN += 1
+            segment = header + bytes(PAYLOAD_SIZE)
+            self._lossy_layer.send_segment(segment)
+        return # TODO: PLEZ overal last received incrementen. zenk you.
 
 
     def lossy_layer_tick(self):
