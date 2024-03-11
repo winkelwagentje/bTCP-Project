@@ -1,5 +1,6 @@
 from packet_handler import PacketHandler
 import queue
+from queue import Queue
 from btcp_socket import BTCPSocket
 from constants import *
 from math import ceil
@@ -40,8 +41,8 @@ class GBN(PacketHandler):
         for i in range(min(self.seg_queue.qsize(), super().window_size)): 
             segment = self.seg_queue.get(0)
             self.lossy_layer.send_segment(segment)
-            # TODO: uncomment next line when merge is done
-            # self.update_ack_queue(int(segment[:16]))
+            seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+            self.update_ack_queue(seq)
 
         return
 
@@ -51,13 +52,12 @@ class GBN(PacketHandler):
         if self.ack_queue.qsize() > 0:
             expected_ack = self.ack_queue.queue[0]
             if int(ack_field,2) >= expected_ack:  # in-order ack
-                # TODO: HANDLE ACK QUEUE FUNCTION
-                return
+                self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
 
         # out-of-order ack
         # now a timer must wait and at time-out window will be send again
 
-        pass 
+        return
 
     def handle_data(self, seq_field: int):
         # Implement the logic to handle data for GBN

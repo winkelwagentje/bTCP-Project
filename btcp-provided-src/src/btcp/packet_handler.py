@@ -13,26 +13,33 @@ class PacketHandler(ABC):
         self.sender_ISN = 0    # initialized to 0 but is updated in the handshake to the 
                                # to the ISN of the other party.
         self.last_received = self.sender_ISN  # last_received is the sequence number of the last received segment
-                                
+        self.window_size = window_size
         self.lossy_layer = lossy_layer
         self.window_size = window_size
 
-
-    def send_data(self, data: bytes) -> None:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
+    def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
         pkt_queue = queue.Queue()                   # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
-        while len(data) > 0:
-            if len(data) >= PAYLOAD_SIZE:
-                pkt_queue.put(data[:PAYLOAD_SIZE])
-                data = data[PAYLOAD_SIZE:]
-            else:
-                pkt_queue.put(data)
-        
-        for seg in self.build_seg_queue(self, list(pkt_queue)):
-            self.seg_queue.put(seg)
+        try:
+            while len(data) > 0:
+                if len(data) >= PAYLOAD_SIZE:
+                    pkt_queue.put(data[:PAYLOAD_SIZE])
+                    data = data[PAYLOAD_SIZE:]
+                else:
+                    pkt_queue.put(data)
+        except queue.Full:
+            logger.info(f"Too much data for packet queue. {pkt_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
+            
+        try:
+            for seg in self.build_seg_queue(self, list(pkt_queue)):
+                self.seg_queue.put(seg)
+        except queue.Full:
+            logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
+
+        n_seg_send = min(self.seg_queue.qsize() * PAYLOAD_SIZE, len(data))  # the number of bytes loaded in queue to send
+
         self.send_window_seqments(self) 
 
-        return None
-
+        return data[:n_seg_send]
 
     def handle_rcvd_seg(self, seq_field: bytes, ack_field: bytes, ACK, payload: bytes) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
         """ 
