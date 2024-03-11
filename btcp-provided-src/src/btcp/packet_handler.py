@@ -3,6 +3,7 @@ import queue
 from constants import PAYLOAD_SIZE
 from btcp_socket import BTCPSocket
 import logging
+from constants import *
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class PacketHandler(ABC):
         self.current_SN = ISN + 1                   # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
         self.expected_ACK_queue = queue.Queue()     # ack queue keeps track of the acks to be received, and in the specified order
         self.seg_queue = queue.Queue()
-        self.sender_ISN = 0    # initialized to 0 but is updated in the handshake to the 
+        self.sender_SN = 0    # initialized to 0 but is updated in the handshake to the 
                                # to the ISN of the other party.
         self.last_received = self.sender_ISN  # last_received is the sequence number of the last received segment
         self.window_size = window_size
@@ -44,13 +45,16 @@ class PacketHandler(ABC):
 
         return data[:n_seg_send]
 
-    def handle_rcvd_seg(self, seq_field: bytes, ack_field: bytes, ACK, payload: bytes) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
+    def handle_rcvd_seg(self, segment) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
         """ 
         A segment is recieved by a socket and unpacked. The payload and part of the unpacked header
         is given as input. This is handled by the specific instance of the handler. This function returns
         the data recieved in correct order. If a call contains not in-order data the function will return 
         an empty bytes object and depending on the specific handler it might buffer or discard the data recieved.
         """ 
+        seq_field, ack_field, flag_byte, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        ACK = flag_byte & 2
+        payload = segment[HEADER_SIZE:]
         if ACK:
             return self.handle_ack(self, seq_field, ack_field, payload)
         return self.handle_data(self, seq_field, ack_field, payload)

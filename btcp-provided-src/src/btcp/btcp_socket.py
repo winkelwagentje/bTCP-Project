@@ -53,6 +53,7 @@ class BTCPSocket:
         self._window = window
         self._timeout = timeout
         self._state = BTCPStates.CLOSED
+        self._ISN = 0 # TODO: make random.
         logger.debug("Socket initialized with window %i and timeout %i",
                      self._window, self._timeout)
 

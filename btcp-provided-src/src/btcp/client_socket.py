@@ -1,6 +1,7 @@
 from btcp.btcp_socket import BTCPSocket, BTCPStates
 from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
+from GBN import GBN
 
 import queue
 import logging
@@ -44,6 +45,7 @@ class BTCPClientSocket(BTCPSocket):
         logger.debug("__init__ called")
         super().__init__(window, timeout)
         self._lossy_layer = LossyLayer(self, CLIENT_IP, CLIENT_PORT, SERVER_IP, SERVER_PORT)
+        self.packet_handler = GBN(window_size=window, ISN=0) # TODO: CHANGE ISN IN HAND SHAKE / NEGOTIATION.
 
         # The data buffer used by send() to send data from the application
         # thread into the network thread. Bounded in size.
@@ -292,30 +294,7 @@ class BTCPClientSocket(BTCPSocket):
         done later.
         """
         logger.debug("send called")
-        raise NotImplementedError("Only rudimentary implementation of send present. Read the comments & code of client_socket.py, then remove the NotImplementedError.")
-
-        # Example with a finite buffer: a queue with at most 1000 chunks,
-        # for a maximum of 985KiB data buffered to get turned into packets.
-        # See BTCPSocket__init__() in btcp_socket.py for its construction.
-        datalen = len(data)
-        logger.debug("%i bytes passed to send", datalen)
-        sent_bytes = 0
-        logger.info("Queueing data for transmission")
-        try:
-            while sent_bytes < datalen:
-                logger.debug("Cumulative data queued: %i bytes", sent_bytes)
-                # Slide over data using sent_bytes. Reassignments to data are
-                # too expensive when data is large.
-                chunk = data[sent_bytes:sent_bytes+PAYLOAD_SIZE]
-                logger.debug("Putting chunk in send queue.")
-                self._sendbuf.put_nowait(chunk)
-                sent_bytes += len(chunk)
-        except queue.Full:
-            logger.info("Send queue full.")
-        logger.info("Managed to queue %i out of %i bytes for transmission",
-                    sent_bytes,
-                    datalen)
-        return sent_bytes
+        return self.packet_handler.send_data(data=data)
 
 
     def shutdown(self):
