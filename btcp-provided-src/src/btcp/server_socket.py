@@ -178,7 +178,7 @@ class BTCPServerSocket(BTCPSocket):
                     case BTCPStates.SYN_RCVD:  # TODO: niet naar gekeken
                         self._syn_segment_received(segment)
                     case BTCPStates.ESTABLISHED:
-                        pass
+                        self._established_segment_received(segment)
 
 
         self._expire_timers()
