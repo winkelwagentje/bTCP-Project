@@ -66,6 +66,11 @@ class BTCPServerSocket(BTCPSocket):
         # Make sure the example timer exists from the start.
         self._example_timer = None
 
+        # Number of tries to establish
+        self._SYN_tries = 0
+        self._MAX_SYN_TRIES = 10
+
+
 
     ###########################################################################
     ### The following section is the interface between the transport layer  ###
@@ -281,8 +286,22 @@ class BTCPServerSocket(BTCPSocket):
         logger.debug("lossy_layer_tick called")
         self._start_example_timer()
         self._expire_timers()
-        raise NotImplementedError("No implementation of lossy_layer_tick present. Read the comments & code of server_socket.py.")
 
+        match super().state:
+            case BTCPStates.ACCEPTING:
+                super().update_state(BTCPSocket.CLOSED)
+            case BTCPStates.SYN_RCVD:
+                if self._SYN_tries > self._MAX_SYN_TRIES:
+                    super().update_state(BTCPSocket.ACCEPTING)
+                else:
+                    self._SYN_tries += 1
+                    # TODO else send SYN + ACK
+                pass
+            case BTCPSocket.ESTABLISHED:
+                # ignore
+                pass
+            case BTCPSocket.CLOSING:
+                super().update_state(BTCPSocket.CLOSED)
 
     # The following two functions show you how you could implement a (fairly
     # inaccurate) but easy-to-use timer.

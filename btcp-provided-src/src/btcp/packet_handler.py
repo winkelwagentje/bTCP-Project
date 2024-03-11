@@ -59,6 +59,15 @@ class PacketHandler(ABC):
             return self.handle_ack(self, seq_field, ack_field, payload)
         return self.handle_data(self, seq_field, ack_field, payload)
 
+    
+    @abstractmethod
+    def timeout(self):
+        """ 
+        This functions handles the case where no segments have been recieved for a time or 
+        a specific has not been recieved.
+        """
+        pass
+
 
     @abstractmethod
     def build_seg_queue(self, pkt_list: list[bytes]) -> queue.Queue[bytes]:

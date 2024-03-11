@@ -89,3 +89,7 @@ class GBN(PacketHandler):
                 super().expected_ACK_queue.get()
             else:
                 break
+
+    def timeout(self):
+        send_window_segments()
+        
