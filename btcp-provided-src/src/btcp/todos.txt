@@ -1,4 +1,5 @@
 meerdere fields updaten:
     server_socket.py:   _fin_received_in_closing, designkeuzes documenteren (Dieks)
     packet_handler.py:  alles nalopen
-    GBN.py:     
+    GBN.py:     jdsh
+    reset tries for timeouts both sockets
