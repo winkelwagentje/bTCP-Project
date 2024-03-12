@@ -54,9 +54,9 @@ class BTCPClientSocket(BTCPSocket):
         logger.info("Socket initialized with sendbuf size 1000")
 
 		# max tries and tries
-		self._MAX_TRIES = 10
-		self._SYN_TRIES = 0
-		self._FIN_TRIES = 0
+        self._MAX_TRIES = 10
+        self._SYN_TRIES = 0
+        self._FIN_TRIES = 0
 
 
 
@@ -180,6 +180,7 @@ class BTCPClientSocket(BTCPSocket):
         lossy_layer_segment_received or lossy_layer_tick.
         """
         logger.debug("lossy_layer_tick called")
+<<<<<<< HEAD
 
         match self._state:
 			case BTCPStates.CLOSED:
@@ -210,6 +211,55 @@ class BTCPClientSocket(BTCPSocket):
 					# TODO: sent a FIN
 		
 		return
+=======
+
+        # Actually send all chunks available for sending.
+        # Relies on an eventual exception to break from the loop when no data
+        # is available.
+        # You should be checking whether there's space in the window as well,
+        # and storing the segments for retransmission somewhere.
+        """
+        try:
+            while True:
+                logger.debug("Getting chunk from buffer.")
+                chunk = self._sendbuf.get_nowait()
+                datalen = len(chunk)
+                logger.debug("Got chunk with lenght %i:",
+                             datalen)
+                logger.debug(chunk)
+                if datalen < PAYLOAD_SIZE:
+                    logger.debug("Padding chunk to full size")
+                    chunk = chunk + b'\x00' * (PAYLOAD_SIZE - datalen)
+                logger.debug("Building segment from chunk.")
+                segment = (self.build_segment_header(0, 0, length=datalen)
+                           + chunk)
+                logger.info("Sending segment.")
+                self._lossy_layer.send_segment(segment)
+        except queue.Empty:
+            logger.info("No (more) data was available for sending right now.")
+        """
+
+        match self._state:
+            case BTCPStates.CLOSED:
+                pass
+            case BTCPStates.SYN_SENT:
+                if self._SYN_TRIES > self._MAX_TRIES:
+                    self.update_state(BTCPStates.CLOSED)
+                else:
+                    self._SYN_TRIES += 1
+                    # TODO: sent a SYN
+            case BTCPStates.ESTABLISHED:
+                # after recieving no ACKs we want to make sure the 
+                # packet handler is notified and handles this appropriately
+                self.packet_handler.timeout()
+            case BTCPStates.FIN_SENT:
+                if self._FIN_TRIES > self._MAX_TRIES:
+                    self.update_state(BTCPStates.CLOSED)
+                else:
+                    self._FIN_TRIES += 1
+                    # TODO: sent a FIN
+        return
+>>>>>>> 8aac1dba23c9149cae8af734034a6374b0ba59d3
 
 
 
