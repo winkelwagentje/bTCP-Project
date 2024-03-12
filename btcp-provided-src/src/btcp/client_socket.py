@@ -125,9 +125,6 @@ class BTCPClientSocket(BTCPSocket):
                 pass
             else:
                 match self._state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
-                    case BTCPSocket.CLOSED:
-                        # ignore
-                        pass
                     case BTCPStates.SYN_SENT:
                         self._syn_segment_sent(segment)
                     case BTCPStates.ESTABLISHED:
@@ -139,6 +136,16 @@ class BTCPClientSocket(BTCPSocket):
         """
         recv SYN|ACK -> send ACK
         """
+
+        seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        if flags & 7 == 6 and ack_num == self._ISN + 1: # check iff syn and ack flags are set, and if the ack is the expected ack.
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True)
+            header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+            segment = header + bytes(PAYLOAD_SIZE)
+            self._lossy_layer.send_segment(segment)
+            self.update_state(BTCPStates.ESTABLISHED)
+            # wellicht nog ISN/SN aanpassen (zowel in btcpsocket class als de packet handler)
+
         pass
 
     def _established_segment_received(self, segment):
@@ -149,6 +156,10 @@ class BTCPClientSocket(BTCPSocket):
         recv ACK, process ACK
         recv FIN|ACK -> send ACK
         """
+        
+        seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        
+
         pass
 
 
@@ -181,6 +192,7 @@ class BTCPClientSocket(BTCPSocket):
 
         match self._state:
             case BTCPStates.CLOSED:
+<<<<<<< HEAD
 				pass
 			case BTCPStates.SYN_SENT:
 				if self._SYN_TRIES > self._MAX_TRIES:
@@ -207,6 +219,34 @@ class BTCPClientSocket(BTCPSocket):
 					self._FIN_TRIES += 1
 					# TODO: sent a FIN
 		
+=======
+                pass
+            case BTCPStates.SYN_SENT:
+                if self._SYN_TRIES > self._MAX_TRIES:
+                    self._SYN_TRIES = 0
+                    self.update_state(BTCPStates.CLOSED)
+                else:
+                    self._SYN_TRIES += 1
+                    
+                    # re-send connecting SYN
+                    pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=0, syn_set=True) # Do we keep acknum = 0 here?
+                    header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=0, syn_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+                    segment = header + bytes(PAYLOAD_SIZE)
+
+                    self._lossy_layer.send_segment(segment)
+            case BTCPStates.ESTABLISHED:
+                # after recieving no ACKs we want to make sure the 
+                # packet handler is notified and handles this appropriately
+                self.packet_handler.timeout()
+            case BTCPStates.FIN_SENT:
+                if self._FIN_TRIES > self._MAX_TRIES:
+                    self._FIN_TRIES = 0
+                    self.update_state(BTCPStates.CLOSED)
+                else:
+                    self._FIN_TRIES += 1
+                    # TODO: sent a FIN
+
+>>>>>>> 9a945a696690fd2ff96a05d23be9b92321a6653e
         return
 
 
