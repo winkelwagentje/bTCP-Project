@@ -132,8 +132,6 @@ class BTCPServerSocket(BTCPSocket):
         logger.debug("lossy_layer_segment_received called")
         logger.debug(segment)
 
-        SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
-
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
@@ -143,7 +141,7 @@ class BTCPServerSocket(BTCPSocket):
                 # probably just ignore / drop the packet.
                 return
             else:
-                match super()._state:
+                match self._state:
                     case BTCPStates.ACCEPTING: 
                         self._accepting_segment_received(segment)
                     case BTCPStates.CLOSING: 
@@ -160,97 +158,109 @@ class BTCPServerSocket(BTCPSocket):
 
 
     def _accepting_segment_received(self, segment):
-        """Helper method handling received segment in CLOSED state
         """
-        logger.debug("_accepting_segment_received called")
-        logger.warning("Segment received in CLOSED state.")
-        logger.warning("Normally we wouldn't process this, but the "
-                       "rudimentary implementation never leaves the CLOSED "
-                       "state.")
-        # Get length from header. Change this to a proper segment header unpack
-        # after implementing BTCPSocket.unpack_segment_header in btcp_socket.py
+        This function will handle incomming segments when in the accepting state. Meaning:
+        if a SYN -> send a SYN|ACK
+        else ignore all
+        """
+
+        logger.info("accepting a segment")
+        logger.debug(segment)
+
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         # Slice data from incoming segment.
-        chunk = segment[HEADER_SIZE:HEADER_SIZE + data_len]
-        # Pass data into receive buffer so that the application thread can
-        # retrieve it.
-        '''try:
-            self._recvbuf.put_nowait(chunk)
-        except queue.Full:
-            # Data gets dropped if the receive buffer is full. You need to
-            # ensure this doesn't happen by using window sizes and not
-            # acknowledging dropped data.
-            # Initially, while still developing other features,
-            # you can also just set the size limitation on the Queue
-            # much higher, or remove it altogether.
-            logger.critical("Data got dropped!")
-            logger.debug(chunk)'''
-        SYN = flags & 4
-        if SYN:
-            super().update_state(BTCPStates.SYN_RCVD)
-            super().sender_SN = seq_num
-            pseudo_header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=super()._window)
-            header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+
+
+        # If the segment has a SYN flag we reply with a SYN|ACK to start a connection
+        if flags & fSYN:  # SYN flag is set
+            # update variables consistent with handshake
+            self.update_state(BTCPStates.SYN_RCVD)
+            self.sender_SN = seq_num
             self.packet_handler.current_SN += 1
+
+            # construct segment
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window)
+            header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
+
             self._lossy_layer.send_segment(segment)
         return
 
 
     def _closing_segment_received(self, segment):
-        """Helper method handling received segment in CLOSING state
-
-        Currently solely for demonstration purposes.
+        """
+        Helper method handling received segment in CLOSING state
         """
         logger.debug("_closing_segment_received called")
         logger.info("Segment received in CLOSING state.")
         logger.info("This needs to be properly implemented. "
                     "Currently only here for demonstration purposes.")
+
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if flags & 7 == 2:      # only the ACK flag is set
-            super().update_state(BTCPStates.CLOSED)
-        elif flags & 7 == 1:    # only the FIN flag is set
+
+        if flags == fACK:      # only the ACK flag is set
+            self.update_state(BTCPStates.CLOSED)
+        elif flags == fFIN:    # only the FIN flag is set
+            # construct FIN|ACK message
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True)  #TODO: SCHRIJF COMMENTS PLEZ
             header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
-            self.packet_handler.current_SN += 1
             segment = header + bytes(PAYLOAD_SIZE)
+
+            # update all constants and values
+            self.packet_handler.current_SN += 1
+
             self._lossy_layer.send_segment(segment=segment)
-        elif flags & 7 == 0 and not self._fin_received_in_closing and seq_num < self.packet_handler.last_received:    # no flags set, and not yet received a fin
+            
+        elif flags == 0 and not self._fin_received_in_closing and seq_num < self.packet_handler.last_received:    # no flags set, and not yet received a FIN
+            # construct a ... TODO
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True)
             header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
-            self.packet_handler.current_SN += 1
             segment = header + bytes(PAYLOAD_SIZE)
+
+            # update all constants and values
+            self.packet_handler.current_SN += 1
+
             self._lossy_layer.send_segment(segment)
         return
 
 
     def _syn_segment_received(self, segment):
-        """Helper method handling received segment in any other state
-
-        Currently solely for demonstration purposes.
+        """
+        This function handles all segments recieved when in the SYN state.
         """
         logger.debug("_syn_segment_received called")
         logger.info("Segment received in %s state",
                     self._state)
+
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if flags & 7 == 2: # ack
-            super().update_state(BTCPStates.ESTABLISHED)
-        elif flags & 7 == 4 and seq_num == super().sender_SN: # syn
-            pseudo_header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=super()._window)
-            header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
-            self.packet_handler.current_SN += 1
+
+        if flags == fACK: # Only the ACK flag is set
+            self.update_state(BTCPStates.ESTABLISHED)
+        elif flags == fSYN and seq_num == self.sender_SN: # Only the SYN flag is set and ... TODO
+            # construct a segment with ... TODO
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window)
+            header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
+
+            # update all constants and values
+            self.packet_handler.current_SN += 1
+
             self._lossy_layer.send_segment(segment)
         
     def _established_segment_received(self, segment):
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if flags & 7 == 0:
+        
+        if flags == 0:  # no flags
             self.packet_handler.handle_data(segment)
-        elif flags & 7 == 1 and seq_num == self.packet_handler.last_received + 1:
+        elif flags == fFIN and seq_num == self.packet_handler.last_received + 1:  # Only the FIN flag set and ... TODO
+            # construct a segment with ... TODO
             pseudo_header = BTCPSocket.build_segment_header(self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True)
             header = BTCPSocket.build_segment_header(self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
-            self.packet_handler.current_SN += 1
             segment = header + bytes(PAYLOAD_SIZE)
+            
+            # update all constants and values
+            self.packet_handler.current_SN += 1
+
             self._lossy_layer.send_segment(segment)
         return # TODO: PLEZ overal last received incrementen. zenk you.
 
@@ -280,31 +290,36 @@ class BTCPServerSocket(BTCPSocket):
         self._start_example_timer()
         self._expire_timers()
 
-        match super().state:
+        match self._state:
             case BTCPStates.ACCEPTING:
-                super().update_state(BTCPSocket.CLOSED)
+                self.update_state(BTCPStates.CLOSED)
             case BTCPStates.SYN_RCVD:
                 if self._SYN_tries > self._MAX_SYN_TRIES:
-                    super().update_state(BTCPSocket.ACCEPTING)
+                    self.update_state(BTCPStates.ACCEPTING)
                 else:
-                    self._SYN_tries += 1
-                    super().update_state(BTCPStates.SYN_RCVD)
-                    pseudo_header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=super().sender_SN+1, syn_set=True, ack_set=True, window=super()._window)
-                    header = BTCPSocket.build_segment_header(seqnum=super()._ISN, acknum=super().sender_SN+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+                    # construct a reply segment with ... TODO
+                    pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=self.sender_SN+1, syn_set=True, ack_set=True, window=self._window)
+                    header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=self.sender_SN+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
                     segment = header + bytes(PAYLOAD_SIZE)
+                    
+                    # update all constants and values
+                    self._SYN_tries += 1
+                    self.update_state(BTCPStates.SYN_RCVD)
+
                     self._lossy_layer.send_segment(segment)
+            case BTCPStates.ESTABLISHED:
+                # When the server has not recieved something for a while the server will assume
+                # nothing has been send for a while or is still in flight. This means it can just wait
+                # for while. Thus we do nothing
                 pass
-            case BTCPSocket.ESTABLISHED:
-                # ignore
-                pass
-            case BTCPSocket.CLOSING:
-                super().update_state(BTCPSocket.CLOSED)
+            case BTCPStates.CLOSING:
+                self.update_state(BTCPStates.CLOSED)
 
     # The following two functions show you how you could implement a (fairly
     # inaccurate) but easy-to-use timer.
     # You *do* have to call _expire_timers() from *both* lossy_layer_tick
     # and lossy_layer_segment_received, for reasons explained in
-    # lossy_layer_tick.
+    # lossy_layer_tick. TODO TODO
     def _start_example_timer(self):
         if not self._example_timer:
             logger.debug("Starting example timer.")
@@ -380,11 +395,11 @@ class BTCPServerSocket(BTCPSocket):
         logger.debug("accept called")
 
         if self._state != BTCPStates.CLOSED:
-            logger.debug(f"accept was called, but the server was not in the CLOSED state. Server is in {super().state} instead")
+            logger.debug(f"accept was called, but the server was not in the CLOSED state. Server is in {self._state} instead")
             logger.debug("accept performed.")
         
         self._state = BTCPStates.ACCEPTING
-        super()._ISN = super().reset_ISN()
+        self._ISN = self.reset_ISN()
         while self._state != BTCPStates.CLOSED and self._state != BTCPStates.ESTABLISHED:
             time.sleep(0.1)
 
