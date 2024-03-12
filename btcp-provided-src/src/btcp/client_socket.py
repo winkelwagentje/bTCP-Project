@@ -121,44 +121,33 @@ class BTCPClientSocket(BTCPSocket):
                 # probably just ignore / drop the packet.
                 pass
             else:
-                match super().state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
-                    case BTCPSocket.CLOSED: # i think this state is redundant here
-                        # TODO: handle
+                match self._state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
+                    case BTCPSocket.CLOSED:
+                        # ignore
                         pass
-                    case BTCPStates.SYN_SENT: # check if we received a segment where the syn and ack flags are set. sent ack.
-                        if flags & FIN: pass  # FIN flag is send and ignored
-                        # TODO: handle
-                        pass
+                    case BTCPStates.SYN_SENT:
+                        self._syn_segment_sent(segment)
                     case BTCPStates.ESTABLISHED:
-                        # TODO: handle
-                        if flags & SYN:
-                            if flags & ACK:  # a SYN ACK is rcvd, ignore but send ACK
-                                snd_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_sent=True, window=window, length=data_len, checksum=checksum) << PAYLOAD_SIZE*8
-
-                                snd_data = "\x00"*SEGMENT_SIZE # TODO: dubbel check
-                                self._lossy_layer.send_segment(snd_header + snd_data)
-                            else: # SYN flas is send
-                                # This is ignored
-                                pass
-                        elif flags & FIN:  # FIN flag is send
-                            if flags & ACK:
-                                # TODO: handle FIN ACK rcvd
-                                pass
-                            else:
-                                # The server can not FIN the conversation
-                                # Thus we ignore this message
-                                pass
-                        elif flags & ACK:  # ACK flag is send, no SYN or FIN
-                            # TODO: handle ACK-message
-                            pass
-                        # This is only data of the server but we ignore this
-                        pass
+                        self._established_segment_received(segemtn)
                     case BTCPStates.FIN_SENT:
-                        if flags & SYN:  pass  # SYN flag is send and ignored
-                        # TODO: handle
-                        pass
+                        self._fin_segment_sent(segment)
 
-        raise NotImplementedError("No implementation of lossy_layer_segment_received present. Read the comments & code of client_socket.py.")
+    def _syn_segment_received(self, segment):
+        """
+        recv SYN|ACK -> send ACK
+        """
+        pass
+
+    def _established_segment_received(self, segment):
+        self.packet_handler.handle_rcvd_seg(segment)
+    
+    def _fin_segment_sent(self, segment):
+        """
+        recv ACK, process ACK
+        recv FIN|ACK -> send ACK
+        """
+        pass
+
 
 
     def lossy_layer_tick(self):

@@ -30,3 +30,8 @@ HEADER_SIZE, PAYLOAD_SIZE, SEGMENT_SIZE:
 HEADER_SIZE = 10
 PAYLOAD_SIZE = 1008
 SEGMENT_SIZE = HEADER_SIZE + PAYLOAD_SIZE
+
+# These will help to equiate or bitmask the flag byte
+fSYN = b100
+fACK = b010 
+fFIN = b001
