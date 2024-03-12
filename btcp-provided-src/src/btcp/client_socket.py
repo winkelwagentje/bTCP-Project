@@ -127,9 +127,6 @@ class BTCPClientSocket(BTCPSocket):
                 pass
             else:
                 match self._state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
-                    case BTCPSocket.CLOSED:
-                        # ignore
-                        pass
                     case BTCPStates.SYN_SENT:
                         self._syn_segment_sent(segment)
                     case BTCPStates.ESTABLISHED:
@@ -295,12 +292,6 @@ class BTCPClientSocket(BTCPSocket):
 
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
             time.sleep(0.1)
-        
-
-        
-        
-            
-        raise NotImplementedError("No implementation of connect present. Read the comments & code of client_socket.py.")
 
 
     def send(self, data):
