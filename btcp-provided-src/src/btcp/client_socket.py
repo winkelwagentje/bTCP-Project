@@ -128,7 +128,7 @@ class BTCPClientSocket(BTCPSocket):
                     case BTCPStates.SYN_SENT:
                         self._syn_segment_sent(segment)
                     case BTCPStates.ESTABLISHED:
-                        self._established_segment_received(segemtn)
+                        self._established_segment_received(segment)
                     case BTCPStates.FIN_SENT:
                         self._fin_segment_sent(segment)
 
