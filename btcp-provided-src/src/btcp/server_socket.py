@@ -236,8 +236,8 @@ class BTCPServerSocket(BTCPSocket):
 
         if flags == fACK: # Only the ACK flag is set
             self.update_state(BTCPStates.ESTABLISHED)
-        elif flags == fSYN and seq_num == self.sender_SN: # Only the SYN flag is set and ... TODO
-            # construct a segment with ... TODO
+        elif flags == fSYN and seq_num == self.sender_SN: # Only the SYN flag is set and it is the same SYN as send at the CONNECTING state
+            # construct a segment with the SYN ACK flags set to acknowledge this SYN segment
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window)
             header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
@@ -252,8 +252,9 @@ class BTCPServerSocket(BTCPSocket):
         
         if flags == 0:  # no flags
             self.packet_handler.handle_data(segment)
-        elif flags == fFIN and seq_num == self.packet_handler.last_received + 1:  # Only the FIN flag set and ... TODO
-            # construct a segment with ... TODO
+        elif flags == fFIN and seq_num == self.packet_handler.last_received + 1:  # Only the FIN flag set and it is in-order
+            # construct a segment with FIN ACK flags, we choose to increment SN by 1 and send the SN of the sender back as the ACK.
+            # This is an abitrary choice only consistency is important.
             pseudo_header = BTCPSocket.build_segment_header(self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True)
             header = BTCPSocket.build_segment_header(self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
@@ -262,6 +263,8 @@ class BTCPServerSocket(BTCPSocket):
             self.packet_handler.current_SN += 1
 
             self._lossy_layer.send_segment(segment)
+
+            # MOETEN WE HIER NIET NOG NAAR DE VOLGENDE STATE?? TODO
         return # TODO: PLEZ overal last received incrementen. zenk you.
 
 

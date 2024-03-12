@@ -114,8 +114,6 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
 
-        SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
-
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
@@ -182,7 +180,7 @@ class BTCPClientSocket(BTCPSocket):
         logger.debug("lossy_layer_tick called")
 
         match self._state:
-			case BTCPStates.CLOSED:
+            case BTCPStates.CLOSED:
 				pass
 			case BTCPStates.SYN_SENT:
 				if self._SYN_TRIES > self._MAX_TRIES:
@@ -209,7 +207,7 @@ class BTCPClientSocket(BTCPSocket):
 					self._FIN_TRIES += 1
 					# TODO: sent a FIN
 		
-		return
+        return
 
 
 
@@ -278,12 +276,6 @@ class BTCPClientSocket(BTCPSocket):
 
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
             time.sleep(0.1)
-        
-
-        
-        
-            
-        raise NotImplementedError("No implementation of connect present. Read the comments & code of client_socket.py.")
 
 
     def send(self, data):
