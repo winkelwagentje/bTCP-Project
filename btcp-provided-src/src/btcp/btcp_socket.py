@@ -61,7 +61,7 @@ class BTCPSocket:
         self._state = new_state
 
     def reset_ISN(self):
-        self._ISN = 0  # TODO: make random.
+        return 0  # TODO: make random.
 
     @staticmethod
     def in_cksum(segment):                              # calculates the internet checksum over the data

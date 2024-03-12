@@ -264,7 +264,7 @@ class BTCPServerSocket(BTCPSocket):
 
             self._lossy_layer.send_segment(segment)
 
-            # MOETEN WE HIER NIET NOG NAAR DE VOLGENDE STATE?? TODO
+            self.update_state(BTCPStates.CLOSING)
         return # TODO: PLEZ overal last received incrementen. zenk you.
 
 
