@@ -2,6 +2,7 @@ from btcp.btcp_socket import BTCPSocket, BTCPStates
 from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
 from btcp.GBN import GBN
+import time
 
 import queue
 import logging
@@ -132,7 +133,7 @@ class BTCPClientSocket(BTCPSocket):
                     case BTCPStates.SYN_SENT:
                         self._syn_segment_sent(segment)
                     case BTCPStates.ESTABLISHED:
-                        self._established_segment_received(segemtn)
+                        self._established_segment_received(segment)
                     case BTCPStates.FIN_SENT:
                         self._fin_segment_sent(segment)
 
@@ -280,7 +281,27 @@ class BTCPClientSocket(BTCPSocket):
         We do not think you will need more advanced thread synchronization in
         this project.
         """
+        if not self._state == BTCPStates.CLOSED:
+            logger.debug("connect was called while not in closed. do nothing.")
+            return 
+        
         logger.debug("connect called")
+        ISN = self._ISN
+        # send 16 bit SNF, set SYN FLAG
+        pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=0, syn_set=True) # Do we keep acknum = 0 here?
+        header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=0, syn_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+        segment = header + bytes(PAYLOAD_SIZE)
+
+        self._lossy_layer.send_segment(segment)
+        self.update_state(BTCPStates.SYN_SENT)
+
+        while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
+            time.sleep(0.1)
+        
+
+        
+        
+            
         raise NotImplementedError("No implementation of connect present. Read the comments & code of client_socket.py.")
 
 
