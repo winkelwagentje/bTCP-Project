@@ -295,6 +295,7 @@ class BTCPServerSocket(BTCPSocket):
                 self.update_state(BTCPStates.CLOSED)
             case BTCPStates.SYN_RCVD:
                 if self._SYN_tries > self._MAX_SYN_TRIES:
+                    self._SYN_TRIES = 0
                     self.update_state(BTCPStates.ACCEPTING)
                 else:
                     # construct a reply segment with ... TODO

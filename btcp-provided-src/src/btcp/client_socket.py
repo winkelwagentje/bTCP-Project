@@ -180,49 +180,30 @@ class BTCPClientSocket(BTCPSocket):
         lossy_layer_segment_received or lossy_layer_tick.
         """
         logger.debug("lossy_layer_tick called")
-        raise NotImplementedError("Only rudimentary implementation of lossy_layer_tick present. Read the comments & code of client_socket.py, then remove the NotImplementedError.")
-
-        # Actually send all chunks available for sending.
-        # Relies on an eventual exception to break from the loop when no data
-        # is available.
-        # You should be checking whether there's space in the window as well,
-        # and storing the segments for retransmission somewhere.
-        """
-        try:
-            while True:
-                logger.debug("Getting chunk from buffer.")
-                chunk = self._sendbuf.get_nowait()
-                datalen = len(chunk)
-                logger.debug("Got chunk with lenght %i:",
-                             datalen)
-                logger.debug(chunk)
-                if datalen < PAYLOAD_SIZE:
-                    logger.debug("Padding chunk to full size")
-                    chunk = chunk + b'\x00' * (PAYLOAD_SIZE - datalen)
-                logger.debug("Building segment from chunk.")
-                segment = (self.build_segment_header(0, 0, length=datalen)
-                           + chunk)
-                logger.info("Sending segment.")
-                self._lossy_layer.send_segment(segment)
-        except queue.Empty:
-            logger.info("No (more) data was available for sending right now.")
-        """
 
         match self._state:
 			case BTCPStates.CLOSED:
 				pass
 			case BTCPStates.SYN_SENT:
 				if self._SYN_TRIES > self._MAX_TRIES:
+					self._SYN_TRIES = 0
 					self.update_state(BTCPStates.CLOSED)
 				else:
 					self._SYN_TRIES += 1
-					# TODO: sent a SYN
+					
+					# re-send connecting SYN
+					pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=0, syn_set=True) # Do we keep acknum = 0 here?
+					header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=0, syn_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+					segment = header + bytes(PAYLOAD_SIZE)
+
+					self._lossy_layer.send_segment(segment)
 			case BTCPStates.ESTABLISHED:
 				# after recieving no ACKs we want to make sure the 
 				# packet handler is notified and handles this appropriately
 				self.packet_handler.timeout()
 			case BTCPStates.FIN_SENT:
 				if self._FIN_TRIES > self._MAX_TRIES:
+					self._FIN_TRIES = 0
 					self.update_state(BTCPStates.CLOSED)
 				else:
 					self._FIN_TRIES += 1
