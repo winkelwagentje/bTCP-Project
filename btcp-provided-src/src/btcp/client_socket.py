@@ -114,6 +114,8 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
 
+        SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
+
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
@@ -192,34 +194,6 @@ class BTCPClientSocket(BTCPSocket):
 
         match self._state:
             case BTCPStates.CLOSED:
-<<<<<<< HEAD
-				pass
-			case BTCPStates.SYN_SENT:
-				if self._SYN_TRIES > self._MAX_TRIES:
-					self._SYN_TRIES = 0
-					self.update_state(BTCPStates.CLOSED)
-				else:
-					self._SYN_TRIES += 1
-					
-					# re-send connecting SYN
-					pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=0, syn_set=True) # Do we keep acknum = 0 here?
-					header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=0, syn_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
-					segment = header + bytes(PAYLOAD_SIZE)
-
-					self._lossy_layer.send_segment(segment)
-			case BTCPStates.ESTABLISHED:
-				# after recieving no ACKs we want to make sure the 
-				# packet handler is notified and handles this appropriately
-				self.packet_handler.timeout()
-			case BTCPStates.FIN_SENT:
-				if self._FIN_TRIES > self._MAX_TRIES:
-					self._FIN_TRIES = 0
-					self.update_state(BTCPStates.CLOSED)
-				else:
-					self._FIN_TRIES += 1
-					# TODO: sent a FIN
-		
-=======
                 pass
             case BTCPStates.SYN_SENT:
                 if self._SYN_TRIES > self._MAX_TRIES:
@@ -246,7 +220,6 @@ class BTCPClientSocket(BTCPSocket):
                     self._FIN_TRIES += 1
                     # TODO: sent a FIN
 
->>>>>>> 9a945a696690fd2ff96a05d23be9b92321a6653e
         return
 
 
