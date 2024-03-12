@@ -140,42 +140,16 @@ class BTCPServerSocket(BTCPSocket):
             header, data = segment[:HEADER_SIZE], segment[HEADER_SIZE:]
             seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
             if not BTCPSocket.verify_checksum(header):
-                # TODO: handle the case where the checksum is not correct.
                 # probably just ignore / drop the packet.
-                pass
+                return
             else:
                 match super()._state:
                     case BTCPStates.ACCEPTING: 
                         self._accepting_segment_received(segment)
                     case BTCPStates.CLOSING: 
-                        if flags == FIN:
-                            # TODO: send FIN ACK
-                            pass
-                        if flags == ACK:
-                            super().update_state(BTCPStates.CLOSED)
-                        # for now we ignore past FIN recieved segments
+                        # for now we ignore past FIN received segments
                         self._closing_segment_received(segment)
-                    case BTCPStates.ACCEPTING:
-                        if flags == SYN: 
-                            # TODO: send SYN ACK
-                            pass
                     case BTCPStates.SYN_RCVD:
-                        if flags == SYN:
-                            # TODO: send SYN ACK
-                            pass
-                        elif flags == ACK:  # TODO: check val ack
-                            super().update_state(BTCPStates.ESTABLISHED)
-                    case BTCPStates.ESTABLISHED:
-                        if flags == FIN:
-                            #  TODO: handle FIN, send FIN ACK
-                            pass
-                        elif flags & (SYN + ACK):  # rcv a SYN or ACK
-                            # ignore
-                            pass
-                        else:
-                            # TODO: is seg is in order return an ACK
-                            pass
-                    case BTCPStates.SYN_RCVD:  # TODO: niet naar gekeken
                         self._syn_segment_received(segment)
                     case BTCPStates.ESTABLISHED:
                         self._established_segment_received(segment)
