@@ -54,9 +54,9 @@ class BTCPClientSocket(BTCPSocket):
         logger.info("Socket initialized with sendbuf size 1000")
 
 		# max tries and tries
-		self._MAX_TRIES = 10
-		self._SYN_TRIES = 0
-		self._FIN_TRIES = 0
+        self._MAX_TRIES = 10
+        self._SYN_TRIES = 0
+        self._FIN_TRIES = 0
 
 
 
@@ -180,7 +180,6 @@ class BTCPClientSocket(BTCPSocket):
         lossy_layer_segment_received or lossy_layer_tick.
         """
         logger.debug("lossy_layer_tick called")
-        raise NotImplementedError("Only rudimentary implementation of lossy_layer_tick present. Read the comments & code of client_socket.py, then remove the NotImplementedError.")
 
         # Actually send all chunks available for sending.
         # Relies on an eventual exception to break from the loop when no data
@@ -209,26 +208,25 @@ class BTCPClientSocket(BTCPSocket):
         """
 
         match self._state:
-			case BTCPStates.CLOSED:
-				pass
-			case BTCPStates.SYN_SENT:
-				if self._SYN_TRIES > self._MAX_TRIES:
-					self.update_state(BTCPStates.CLOSED)
-				else:
-					self._SYN_TRIES += 1
-					# TODO: sent a SYN
-			case BTCPStates.ESTABLISHED:
-				# after recieving no ACKs we want to make sure the 
-				# packet handler is notified and handles this appropriately
-				self.packet_handler.timeout()
-			case BTCPStates.FIN_SENT:
-				if self._FIN_TRIES > self._MAX_TRIES:
-					self.update_state(BTCPStates.CLOSED)
-				else:
-					self._FIN_TRIES += 1
-					# TODO: sent a FIN
-		
-		return
+            case BTCPStates.CLOSED:
+                pass
+            case BTCPStates.SYN_SENT:
+                if self._SYN_TRIES > self._MAX_TRIES:
+                    self.update_state(BTCPStates.CLOSED)
+                else:
+                    self._SYN_TRIES += 1
+                    # TODO: sent a SYN
+            case BTCPStates.ESTABLISHED:
+                # after recieving no ACKs we want to make sure the 
+                # packet handler is notified and handles this appropriately
+                self.packet_handler.timeout()
+            case BTCPStates.FIN_SENT:
+                if self._FIN_TRIES > self._MAX_TRIES:
+                    self.update_state(BTCPStates.CLOSED)
+                else:
+                    self._FIN_TRIES += 1
+                    # TODO: sent a FIN
+        return
 
 
 
