@@ -6,6 +6,7 @@ import time
 
 import queue
 import logging
+import struct
 
 
 logger = logging.getLogger(__name__)
@@ -132,7 +133,7 @@ class BTCPClientSocket(BTCPSocket):
                     case BTCPStates.ESTABLISHED:
                         self._established_segment_received(segment)
                     case BTCPStates.FIN_SENT:
-                        self._fin_segment_sent(segment)
+                        self._fin_sent_segment_received(segment)
 
     def _syn_segment_received(self, segment):
         """
@@ -153,16 +154,21 @@ class BTCPClientSocket(BTCPSocket):
     def _established_segment_received(self, segment):
         self.packet_handler.handle_rcvd_seg(segment)
     
-    def _fin_segment_sent(self, segment):
+    def _fin_sent_segment_received(self, segment):
         """
         recv ACK, process ACK
         recv FIN|ACK -> send ACK
         """
         
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        
+        if flags == fACK:
+            self.packet_handler.handle_ack(struct.pack("!H", ack_num))
 
-        pass
+        if flags == fFIN + fACK:
+            # TODO: what seqnum and acknum to use?
+
+            self.update_state(BTCPStates.CLOSED)
+            pass
 
 
 
