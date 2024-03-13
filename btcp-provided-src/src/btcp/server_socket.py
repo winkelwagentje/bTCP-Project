@@ -251,7 +251,7 @@ class BTCPServerSocket(BTCPSocket):
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         
         if flags == 0:  # no flags
-            self.packet_handler.handle_data(segment)
+            self.packet_handler.handle_rcvd_seg(segment)
         elif flags == fFIN and seq_num == self.packet_handler.last_received + 1:  # Only the FIN flag set and it is in-order
             # construct a segment with FIN ACK flags, we choose to increment SN by 1 and send the SN of the sender back as the ACK.
             # This is an abitrary choice only consistency is important.

@@ -162,7 +162,7 @@ class BTCPClientSocket(BTCPSocket):
         
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         if flags == fACK:
-            self.packet_handler.handle_ack(struct.pack("!H", ack_num))
+            self.packet_handler.handle_ack(struct.pack("!H", ack_num)) # TODO ? - dieks
 
         if flags == fFIN + fACK:
             # TODO: what seqnum and acknum to use?

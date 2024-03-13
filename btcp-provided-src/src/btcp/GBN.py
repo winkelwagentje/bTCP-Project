@@ -38,7 +38,7 @@ class GBN(PacketHandler):
         # Implement the logic to send the sequence queue for GBN 
         # Segment sending logic in GBN: Send as many segments in the segment queue which fit in the window.
 
-        for i in range(min(self.seg_queue.qsize(), super().window_size)): 
+        for i in range(min(self.seg_queue.qsize(), self.window_size)): 
             segment = self.seg_queue.get(0)
             self.lossy_layer.send_segment(segment)
             seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
@@ -53,21 +53,22 @@ class GBN(PacketHandler):
             expected_ack = self.ack_queue.queue[0]
             if int(ack_field,2) >= expected_ack:  # in-order ack
                 self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
+                self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
 
-        # out-of-order ack
+        # out-of-order ack TODO TIMER?
         # now a timer must wait and at time-out window will be send again
 
         return
 
     def handle_data(self, seq_field: int):
         # Implement the logic to handle data for GBN
-        if seq_field == super().last_received + 1:      # check if the message was received in order
+        if seq_field == self.last_received + 1:      # check if the message was received in order
             pseudo_header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
                                 ack_set=True, fin_set=False, length=0, checksum=0)
             header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
                                 ack_set=True, fin_set=False, length=0, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
-            super().lossy_layer.send_segment(segment)
+            self.lossy_layer.send_segment(segment)
         pass 
 
     def build_ack_queue(self):
@@ -75,18 +76,18 @@ class GBN(PacketHandler):
         cpy_seg = list(self.seg_queue)
         for segment in cpy_seg:
             seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-            super().expected_ACK_queue.put(seq)
+            self.expected_ACK_queue.put(seq)
 
 
     def update_ack_queue(self, seq_num: int):
-        super().expected_ACK_queue.put(seq_num)
+        self.expected_ACK_queue.put(seq_num)
 
     def acknowledge_number(self, seq_num: int):      # GBN is cumulative so pop all numbers <= seq_num
-        while not super().expected_ACK_queue.empty():
-            head = super().expected_ACK_queue.queue[0]  # Get the first element without dequeuing
+        while not self.expected_ACK_queue.empty():
+            head = self.expected_ACK_queue.queue[0]  # Get the first element without dequeuing
             if head <= seq_num:
                 # Pop the element from the queue
-                super().expected_ACK_queue.get()
+                self.expected_ACK_queue.get()
             else:
                 break
 

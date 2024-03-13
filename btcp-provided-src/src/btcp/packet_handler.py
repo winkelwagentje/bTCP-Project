@@ -19,10 +19,9 @@ class PacketHandler(ABC):
         self.last_received = self.sender_SN  # last_received is the sequence number of the last received segment
         self.window_size = window_size
         self.lossy_layer = lossy_layer
-        self.window_size = window_size
 
     def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
-        pkt_queue = queue.Queue()                   # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
+        pkt_queue = queue.Queue()                    # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
         try:
             while len(data) > 0:
                 if len(data) >= PAYLOAD_SIZE:
@@ -34,7 +33,7 @@ class PacketHandler(ABC):
             logger.info(f"Too much data for packet queue. {pkt_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
             
         try:
-            for seg in self.build_seg_queue(self, list(pkt_queue)):
+            for seg in self.build_seg_queue(self, list(pkt_queue)):  # TODO WEEWOO
                 self.seg_queue.put(seg)
         except queue.Full:
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
@@ -53,11 +52,14 @@ class PacketHandler(ABC):
         an empty bytes object and depending on the specific handler it might buffer or discard the data recieved.
         """ 
         seq_field, ack_field, flag_byte, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        ACK = flag_byte & 2
         payload = segment[HEADER_SIZE:]
-        if ACK:
-            return self.handle_ack(self, seq_field, ack_field, payload)
-        return self.handle_data(self, seq_field, ack_field, payload)
+         
+        if flag_byte & fACK:
+            data = self.handle_ack(self, seq_field, ack_field, payload)
+        else:
+            data = self.handle_data(self, seq_field, ack_field, payload)
+        self.last_received = seq_field
+        return data
 
     
     @abstractmethod
