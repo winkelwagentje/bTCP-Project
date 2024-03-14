@@ -52,7 +52,7 @@ class BTCPServerSocket(BTCPSocket):
         logger.debug("__init__() called.")
         super().__init__(window, timeout)
         self._lossy_layer = LossyLayer(self, SERVER_IP, SERVER_PORT, CLIENT_IP, CLIENT_PORT)
-        self.packet_handler = GBN(window_size=window, ISN=0) # TODO: change ISN in negotiation.
+        self.packet_handler = GBN(window_size=window, lossy_layer=self._lossy_layer, ISN=0) # TODO: change ISN in negotiation.
 
         # The data buffer used by lossy_layer_segment_received to move data
         # from the network thread into the application thread. Bounded in size.

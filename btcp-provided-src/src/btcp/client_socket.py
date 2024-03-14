@@ -48,7 +48,7 @@ class BTCPClientSocket(BTCPSocket):
         logger.debug("__init__ called")
         super().__init__(window, timeout)
         self._lossy_layer = LossyLayer(self, CLIENT_IP, CLIENT_PORT, SERVER_IP, SERVER_PORT)
-        self.packet_handler = GBN(window_size=window, ISN=0) # TODO: CHANGE ISN IN HAND SHAKE / NEGOTIATION.
+        self.packet_handler = GBN(window_size=window, lossy_layer=self._lossy_layer, ISN=0) # TODO: CHANGE ISN IN HAND SHAKE / NEGOTIATION.
 
         # The data buffer used by send() to send data from the application
         # thread into the network thread. Bounded in size.

@@ -6,8 +6,8 @@ from btcp.constants import *
 from math import ceil
 
 class GBN(PacketHandler):
-    def __init__(self, window_size, ISN=0):
-        super().__init__(window_size, ISN)
+    def __init__(self, window_size, lossy_layer, ISN=0):
+        super().__init__(window_size=window_size, lossy_layer=lossy_layer, ISN=0)
 
     def build_seg_queue(self, pkt_list: list[bytes]) -> queue.Queue[bytes]:
         # Implement the logic to build the segment queue for GBN
@@ -38,7 +38,7 @@ class GBN(PacketHandler):
         # Implement the logic to send the sequence queue for GBN 
         # Segment sending logic in GBN: Send as many segments in the segment queue which fit in the window.
 
-        self.timer.reset()
+        self.ack_timer.reset()
 
         print("GBN: sending window segments")
 
