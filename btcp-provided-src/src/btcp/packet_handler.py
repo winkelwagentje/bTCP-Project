@@ -4,7 +4,7 @@ from btcp.constants import PAYLOAD_SIZE, TIMER_TICK
 from btcp.btcp_socket import BTCPSocket
 import logging
 from btcp.constants import *
-from ResettableTimer import ResettableTimer
+from btcp.resettable_timer import ResettableTimer
 
 logger = logging.getLogger(__name__)
 
