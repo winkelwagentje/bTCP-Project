@@ -37,7 +37,12 @@ class PacketHandler(ABC):
             logger.info(f"Too much data for packet queue. {pkt_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
             
         try:
-            self.seg_queue = self.build_seg_queue(self, list(pkt_queue))  # TODO WEEWOO
+            # self.seg_queue = self.build_seg_queue(list(pkt_queue))  # TODO WEEWOO
+            pkt_list = []
+            while not pkt_queue.empty():
+                pkt_list.append(pkt_queue.get())
+            self.seg_queue = self.build_seg_queue(pkt_list)
+
         except queue.Full:  # TODO HALLE WEG
             print("packet handler: seg queue full")
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")

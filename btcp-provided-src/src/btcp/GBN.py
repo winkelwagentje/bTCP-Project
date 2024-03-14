@@ -19,14 +19,14 @@ class GBN(PacketHandler):
 
             padded_pkt = pkt + bytes(PAYLOAD_SIZE - len(pkt))
             # initialize a header with checksum set to 0. acknum = 0 as ACK flag is false anyway.
-            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window, length=len(pkt))
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window_size, length=len(pkt))
 
             # Now determine the checksum of the segment with the checksum field empty
             segment = pseudo_header + padded_pkt
             checksum = BTCPSocket.in_cksum(segment)
 
             # Construct the final header and segment, with correct checksum
-            header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window, length=len(pkt), checksum=checksum)
+            header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window_size, length=len(pkt), checksum=checksum)
             self.current_SN += 1
             segment = header + padded_pkt
 
