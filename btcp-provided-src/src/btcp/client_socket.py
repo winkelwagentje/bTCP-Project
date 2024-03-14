@@ -215,9 +215,9 @@ class BTCPClientSocket(BTCPSocket):
 
                     self._lossy_layer.send_segment(segment)
             case BTCPStates.ESTABLISHED:
-                # after recieving no ACKs we want to make sure the 
-                # packet handler is notified and handles this appropriately
-                self.packet_handler.timeout()
+                # the packet handler will handle all timers and will already know that there
+                # have been no incomming packets, so we do not have to call anything in the socket
+                pass
             case BTCPStates.FIN_SENT:
                 if self._FIN_TRIES > self._MAX_TRIES:
                     self._FIN_TRIES = 0

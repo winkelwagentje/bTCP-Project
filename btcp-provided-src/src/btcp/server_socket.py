@@ -402,6 +402,7 @@ class BTCPServerSocket(BTCPSocket):
             logger.debug(f"accept was called, but the server was not in the CLOSED state. Server is in {self._state} instead")
             logger.debug("accept performed.")
         
+        self._start_example_timer()
         self._state = BTCPStates.ACCEPTING
         self._ISN = self.reset_ISN()
         while self._state != BTCPStates.CLOSED and self._state != BTCPStates.ESTABLISHED:
