@@ -10,6 +10,7 @@ class ResettableTimer:
 
     def reset(self):
         self.timer.cancel()
+        self.timer = Timer(self.timeout, self.callback)
         self.timer_stopped = False
         self.timer.start()
 

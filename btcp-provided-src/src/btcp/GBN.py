@@ -40,6 +40,8 @@ class GBN(PacketHandler):
 
         self.timer.reset()
 
+        print("GBN: sending window segments")
+
         for i in range(min(self.seg_queue.qsize(), self.window_size)): 
             segment = self.seg_queue.get(0)
             self.lossy_layer.send_segment(segment)
@@ -51,8 +53,8 @@ class GBN(PacketHandler):
     def handle_ack(self, ack_field: bytes):
         # Implement the logic to handle acknowledgment for GBN
 
-        if self.ack_queue.qsize() > 0:
-            expected_ack = self.ack_queue.queue[0]
+        if self.expected_ACK_queue.qsize() > 0:
+            expected_ack = self.expected_ACK_queue.queue[0]
             if int(ack_field,2) >= expected_ack:  # in-order ack
                 self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
                 self.send_base = int(ack_field, 2) + 1  # update start of the sending window 

@@ -20,10 +20,10 @@ class PacketHandler(ABC):
         self.last_received = self.sender_SN  # last_received is the sequence number of the last received segment
         self.window_size = window_size
         self.lossy_layer = lossy_layer
-        self.timer = ResettableTimer(TIMER_TICK, self.timeout)
 
     def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
         pkt_queue = queue.Queue()                    # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
+        print("packet handler: sending data")
         try:
             while len(data) > 0:
                 if len(data) >= PAYLOAD_SIZE:
@@ -31,18 +31,22 @@ class PacketHandler(ABC):
                     data = data[PAYLOAD_SIZE:]
                 else:
                     pkt_queue.put(data)
+                    data = bytes(0)
         except queue.Full:
+            print("packet handler: pkt queue full")
             logger.info(f"Too much data for packet queue. {pkt_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
             
         try:
-            for seg in self.build_seg_queue(self, list(pkt_queue)):  # TODO WEEWOO
-                self.seg_queue.put(seg)
-        except queue.Full:
+            self.seg_queue = self.build_seg_queue(self, list(pkt_queue))  # TODO WEEWOO
+        except queue.Full:  # TODO HALLE WEG
+            print("packet handler: seg queue full")
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
 
         n_seg_send = min(self.seg_queue.qsize() * PAYLOAD_SIZE, len(data))  # the number of bytes loaded in queue to send
 
-        self.send_window_seqments(self) 
+        print("packet handler: preparing to send segments")
+
+        self.send_window_segments() 
 
         return data[:n_seg_send]
 
@@ -53,13 +57,17 @@ class PacketHandler(ABC):
         the data recieved in correct order. If a call contains not in-order data the function will return 
         an empty bytes object and depending on the specific handler it might buffer or discard the data recieved.
         """ 
+
+        print("packet handler: handling a rcvd segment")
         seq_field, ack_field, flag_byte, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         payload = segment[HEADER_SIZE:]
          
         if flag_byte & fACK:
-            data = self.handle_ack(self, seq_field, ack_field, payload)
+            print("\t it is an ACK")
+            data = self.handle_ack(ack_field)
         else:
-            data = self.handle_data(self, seq_field, ack_field, payload)
+            print("\t it is a segment containing data")
+            data = self.handle_data(seq_field)
         self.last_received = seq_field
         return data
 

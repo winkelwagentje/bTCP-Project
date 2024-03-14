@@ -1,6 +1,8 @@
 import struct
 import logging
 from enum import IntEnum
+from btcp.resettable_timer import ResettableTimer
+from btcp.constants import *
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +58,10 @@ class BTCPSocket:
         self._ISN = self.reset_ISN()
         logger.debug("Socket initialized with window %i and timeout %i",
                      self._window, self._timeout)
+        
+        # timer for handshake time, no segments rcvd timer
+        self.timer = ResettableTimer(TIMER_TICK/1000, self.lossy_layer_tick)
+
 
     def update_state(self, new_state):
         self._state = new_state
@@ -87,8 +93,8 @@ class BTCPSocket:
 
         Mind that you change *what* signals that to the correct value(s).
         """
+        print("checksum: ", BTCPSocket.in_cksum(segment))
         return BTCPSocket.in_cksum(segment) == 0x0000
-
 
     @staticmethod
     def build_segment_header(seqnum, acknum,

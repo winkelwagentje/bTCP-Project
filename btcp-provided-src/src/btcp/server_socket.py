@@ -67,9 +67,7 @@ class BTCPServerSocket(BTCPSocket):
         # Make sure the example timer exists from the start.
         self._example_timer = None
 
-        # timer for handshake time, no segments rcvd timer
-        self.timer = ResettableTimer(TIMER_TICK/1000, self.lossy_layer_tick)
-
+        
         # Number of tries to establish
         self._SYN_tries = 0
         self._MAX_SYN_TRIES = 10
@@ -139,6 +137,8 @@ class BTCPServerSocket(BTCPSocket):
         # new segment rcvd so, reset timer
         self.timer.reset()
 
+        print("server: rcvd seg")
+
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
@@ -187,7 +187,8 @@ class BTCPServerSocket(BTCPSocket):
 
             # construct segment
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window)
-            header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+            print("server: accepting segment unpacked:", BTCPSocket.unpack_segment_header(pseudo_header))
+            header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
 
             self._lossy_layer.send_segment(segment)
@@ -243,11 +244,15 @@ class BTCPServerSocket(BTCPSocket):
 
         if flags == fACK: # Only the ACK flag is set
             self.timer.stop()  # no timer needed in ESTABLISHED handled by packet_handler
+
+            print("server: setting state to ESTABLISHED")
+
             self.update_state(BTCPStates.ESTABLISHED)
         elif flags == fSYN and seq_num == self.sender_SN: # Only the SYN flag is set and it is the same SYN as send at the CONNECTING state
             # construct a segment with the SYN ACK flags set to acknowledge this SYN segment
+            print("server: in-order late original SYN")
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window)
-            header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+            header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
 
             # update all constants and values
@@ -315,12 +320,14 @@ class BTCPServerSocket(BTCPSocket):
                 else:
                     # construct a reply segment with ... TODO
                     pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=self.sender_SN+1, syn_set=True, ack_set=True, window=self._window)
-                    header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=self.sender_SN+1, syn_set=True, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+                    header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=self.sender_SN+1, syn_set=True, ack_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
                     segment = header + bytes(PAYLOAD_SIZE)
                     
                     # update all constants and values
                     self._SYN_tries += 1
                     self.update_state(BTCPStates.SYN_RCVD)
+
+                    print("server: sending a new SYN ACK, retry")
 
                     self._lossy_layer.send_segment(segment)
             case BTCPStates.ESTABLISHED:
