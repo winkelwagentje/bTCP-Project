@@ -17,7 +17,7 @@ class PacketHandler(ABC):
         self.seg_queue = queue.Queue()
         self.sender_SN = 0    # initialized to 0 but is updated in the handshake to the 
                                # to the ISN of the other party.
-        self.last_received = self.sender_SN  # last_received is the sequence number of the last received segment
+        self.last_received = ISN  # last_received is the sequence number of the last received segment
         self.window_size = window_size
         self.lossy_layer = lossy_layer
         self.ack_timer = ResettableTimer(TIMER_TICK/100, self.timeout)
@@ -67,14 +67,17 @@ class PacketHandler(ABC):
         print("packet handler: handling a rcvd segment")
         seq_field, ack_field, flag_byte, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         payload = segment[HEADER_SIZE:]
-         
+        
+
         if flag_byte & fACK:
             print("\t it is an ACK")
             data = self.handle_ack(ack_field)
         else:
             print("\t it is a segment containing data")
             data = self.handle_data(seq_field)
+        print("packet_handler: UPDATING last_received IN NEXT LINE")
         self.last_received = seq_field
+        print(f"packet handler: handled_rcvd_seg: last received: {self.last_received}, seq: {seq_field}")
         return data
 
     

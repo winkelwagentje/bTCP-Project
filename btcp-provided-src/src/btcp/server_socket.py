@@ -147,10 +147,12 @@ class BTCPServerSocket(BTCPSocket):
         else:
             header, data = segment[:HEADER_SIZE], segment[HEADER_SIZE:]
             seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
-            if not BTCPSocket.verify_checksum(header):
+            if not BTCPSocket.verify_checksum(segment):
                 # probably just ignore / drop the packet.
+                print(BTCPSocket.in_cksum(segment))
                 return
             else:
+                print("SERVER: reached else in lossylayersegmentreceived")
                 match self._state:
                     case BTCPStates.ACCEPTING: 
                         self._accepting_segment_received(segment)
@@ -160,6 +162,7 @@ class BTCPServerSocket(BTCPSocket):
                     case BTCPStates.SYN_RCVD:
                         self._syn_segment_received(segment)
                     case BTCPStates.ESTABLISHED:
+                        print("SERVER ESTABLISHED: RECEIVING SEGMENT")
                         self._established_segment_received(segment)
 
 
@@ -357,6 +360,9 @@ class BTCPServerSocket(BTCPSocket):
             logger.debug("Example timer already running.")
 
 
+
+    # TODO: CHECKEN:
+    # HEB self._example_timer AANGEPAST NAAR ONZE EIGEN TIMER
     def _expire_timers(self):
         curtime = time.monotonic_ns()
         if not self._example_timer:

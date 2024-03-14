@@ -55,9 +55,13 @@ class GBN(PacketHandler):
 
         if self.expected_ACK_queue.qsize() > 0:
             expected_ack = self.expected_ACK_queue.queue[0]
-            if int(ack_field,2) >= expected_ack:  # in-order ack
-                self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
-                self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
+            # TODO: check the following if statement; old if is commented out
+            # if int(ack_field,2) >= expected_ack:  # in-order ack
+            if ack_field >= expected_ack: # TODO: following lines are replaced
+                # self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
+                # self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
+                self.acknowledge_number(ack_field)
+                self.send_base = ack_field + 1
 
         # out-of-order ack TODO TIMER?
         # now a timer must wait and at time-out window will be send again
@@ -66,14 +70,20 @@ class GBN(PacketHandler):
 
     def handle_data(self, seq_field: int):
         # Implement the logic to handle data for GBN
-        if seq_field == self.last_received + 1:      # check if the message was received in order
+        if seq_field == self.last_received + 2:      # check if the message was received in order
+            # TODO: CHECK IF THE ABOVE + 2 INSTEAD OF + 1 MAKES SENSE
+            # I THINK IT MAKES SENSE BECAUSE THE CLIENT TAKES 2 MESSAGES FOR THE HANDSHAKE IN AN IDEAL WORLD
+            # THIS HAS EVERYTHING TO DO WITH HOW WE INITIALIZE LAST RECEIVED
+            print("GBN: handle_data: sequence field checks out")
             pseudo_header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
-                                ack_set=True, fin_set=False, length=0, checksum=0)
+                                ack_set=True, fin_set=False, window=self.window_size, length=0, checksum=0)
             header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
-                                ack_set=True, fin_set=False, length=0, checksum=BTCPSocket.in_cksum(pseudo_header))
+                                ack_set=True, fin_set=False, window=self.window_size, length=0, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
             self.lossy_layer.send_segment(segment)
-        pass 
+        else:
+            print("GBN: handle data: sequence number didnt match last received + 1") 
+            print(f"seq: {seq_field}, last rcvd: {self.last_received}")
 
     def build_ack_queue(self):
         # Implement the logic to build the acknowledgment queue for GBN
