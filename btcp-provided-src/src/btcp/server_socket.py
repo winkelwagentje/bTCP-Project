@@ -2,6 +2,7 @@ from btcp.btcp_socket import BTCPSocket, BTCPStates, BTCPSignals
 from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
 from btcp.GBN import GBN
+from btcp.resettable_timer import ResettableTimer
 
 import queue
 import time
@@ -65,6 +66,9 @@ class BTCPServerSocket(BTCPSocket):
 
         # Make sure the example timer exists from the start.
         self._example_timer = None
+
+        # timer for handshake time, no segments rcvd timer
+        self.timer = ResettableTimer(TIMER_TICK/1000, self.lossy_layer_tick)
 
         # Number of tries to establish
         self._SYN_tries = 0
@@ -131,6 +135,9 @@ class BTCPServerSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
         logger.debug(segment)
+
+        # new segment rcvd so, reset timer
+        self.timer.reset()
 
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
@@ -235,6 +242,7 @@ class BTCPServerSocket(BTCPSocket):
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
 
         if flags == fACK: # Only the ACK flag is set
+            self.timer.stop()  # no timer needed in ESTABLISHED handled by packet_handler
             self.update_state(BTCPStates.ESTABLISHED)
         elif flags == fSYN and seq_num == self.sender_SN: # Only the SYN flag is set and it is the same SYN as send at the CONNECTING state
             # construct a segment with the SYN ACK flags set to acknowledge this SYN segment
@@ -265,6 +273,8 @@ class BTCPServerSocket(BTCPSocket):
             self._lossy_layer.send_segment(segment)
 
             self.update_state(BTCPStates.CLOSING)
+
+            self.timer.reset()
         return # TODO: PLEZ overal last received incrementen. zenk you.
 
 
@@ -290,8 +300,10 @@ class BTCPServerSocket(BTCPSocket):
         lossy_layer_segment_received or lossy_layer_tick.
         """
         logger.debug("lossy_layer_tick called")
-        self._start_example_timer()
-        self._expire_timers()
+        # self._start_example_timer()TODO
+        # self._expire_timers()
+
+        self.timer.reset()
 
         match self._state:
             case BTCPStates.ACCEPTING:
@@ -402,7 +414,7 @@ class BTCPServerSocket(BTCPSocket):
             logger.debug(f"accept was called, but the server was not in the CLOSED state. Server is in {self._state} instead")
             logger.debug("accept performed.")
         
-        self._start_example_timer()
+        self.timer.reset()  # start timer
         self._state = BTCPStates.ACCEPTING
         self._ISN = self.reset_ISN()
         while self._state != BTCPStates.CLOSED and self._state != BTCPStates.ESTABLISHED:

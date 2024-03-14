@@ -3,6 +3,7 @@ from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
 from btcp.GBN import GBN
 import time
+from btcp.resettable_timer import ResettableTimer
 
 import queue
 import logging
@@ -58,6 +59,9 @@ class BTCPClientSocket(BTCPSocket):
         self._MAX_TRIES = 10
         self._SYN_TRIES = 0
         self._FIN_TRIES = 0
+
+        # a timer for no segments rcvd
+        self.timer = ResettableTimer(TIMER_TICK, self.lossy_layer_tick)
 
 
 
@@ -115,7 +119,7 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
 
-        SYN, FIN, ACK = b'100', b'010', b'001'  # some constants to help with identifying flags
+        self.timer.reset()  # segment rcvd so reset the timer
 
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
@@ -146,6 +150,9 @@ class BTCPClientSocket(BTCPSocket):
             header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
             self._lossy_layer.send_segment(segment)
+
+            self.timer.stop()  # timer not needed in ESTABLISHED state, handled by pkt handler
+
             self.update_state(BTCPStates.ESTABLISHED)
             # wellicht nog ISN/SN aanpassen (zowel in btcpsocket class als de packet handler)
 
@@ -225,6 +232,7 @@ class BTCPClientSocket(BTCPSocket):
                 else:
                     self._FIN_TRIES += 1
                     # TODO: sent a FIN
+        
 
         return
 
@@ -293,6 +301,8 @@ class BTCPClientSocket(BTCPSocket):
         self._lossy_layer.send_segment(segment)
         self.update_state(BTCPStates.SYN_SENT)
 
+        self.timer.reset()  # start timer
+
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
             time.sleep(0.1)
 
@@ -344,7 +354,16 @@ class BTCPClientSocket(BTCPSocket):
         more advanced thread synchronization in this project.
         """
         logger.debug("shutdown called")
-        raise NotImplementedError("No implementation of shutdown present. Read the comments & code of client_socket.py.")
+        
+        if self._state != BTCPStates.ESTABLISHED:
+            logger.debug("cannot call shutdown when connection is not ESTABLISHED")
+        else:   # TODO: check sequence number
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, fin_set=True, window=self._window)
+            header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, fin_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+            self._lossy_layer.send_segment(header + bytes(PAYLOAD_SIZE))
+            # self.packet_handler.current_SN += 1 TODO: check where this happens
+
+            self.timer.stop()
 
 
     def close(self):
