@@ -11,7 +11,7 @@ class ResettableTimer:
     def reset(self):
         self.timer.cancel()
         self.timer_stopped = False
-        self.start()
+        self.timer.start()
 
     def stop(self):
         self.timer.cancel()
