@@ -38,6 +38,8 @@ class GBN(PacketHandler):
         # Implement the logic to send the sequence queue for GBN 
         # Segment sending logic in GBN: Send as many segments in the segment queue which fit in the window.
 
+        self.timer.reset()
+
         for i in range(min(self.seg_queue.qsize(), self.window_size)): 
             segment = self.seg_queue.get(0)
             self.lossy_layer.send_segment(segment)
