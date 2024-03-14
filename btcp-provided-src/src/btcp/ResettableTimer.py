@@ -1,4 +1,4 @@
-from threading import Timer, Event
+from threading import Timer
 import time
 
 
@@ -7,7 +7,7 @@ class ResettableTimer:
         self.timeout = timeout
         self.callback = callback
         self.timer = Timer(timeout, callback)
-        self.timer_stopped = Event()
+        self.timer_stopped = False
 
     def start(self):
         self.timer.start()
@@ -15,35 +15,13 @@ class ResettableTimer:
     def reset(self):
         if self.timer is not None:
             self.timer.cancel()
+        self.timer_stopped = False
         self.start()
 
     def stop(self):
         if self.timer is not None:
             self.timer.cancel()
-        self.timer_stopped.set()
+        self.timer_stopped = True
 
     def is_stopped(self):
-        return self.timer_stopped.is_set()
-
-# Example usage:
-def timeout_callback():
-    print("Timeout occurred")
-
-timer = ResettableTimer(5, timeout_callback)
-timer.start()
-
-# Do some work here...
-print("presleep")
-time.sleep(6)
-print("postsleep")
-
-# Reset the timer
-print("about to reset")
-timer.reset()
-print("reset")
-
-# Stop the timer
-# timer.stop()
-print("prestop")
-timer.stop()
-print("stopped")
+        return self.timer_stopped
