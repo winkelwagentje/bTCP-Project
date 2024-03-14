@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 import queue
-from btcp.constants import PAYLOAD_SIZE
+from btcp.constants import PAYLOAD_SIZE, TIMER_TICK
 from btcp.btcp_socket import BTCPSocket
 import logging
 from btcp.constants import *
+from ResettableTimer import ResettableTimer
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class PacketHandler(ABC):
         self.last_received = self.sender_SN  # last_received is the sequence number of the last received segment
         self.window_size = window_size
         self.lossy_layer = lossy_layer
+        self.timer = ResettableTimer(TIMER_TICK, self.timeout)
 
     def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
         pkt_queue = queue.Queue()                    # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
