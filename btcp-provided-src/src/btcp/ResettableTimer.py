@@ -6,11 +6,10 @@ class ResettableTimer:
     def __init__(self, timeout, callback):
         self.timeout = timeout
         self.callback = callback
-        self.timer = None
+        self.timer = Timer(timeout, callback)
         self.timer_stopped = Event()
 
     def start(self):
-        self.timer = Timer(self.timeout, self.callback)
         self.timer.start()
 
     def reset(self):
