@@ -61,12 +61,12 @@ class GBN(PacketHandler):
             expected_ack = self.expected_ACK_queue.queue[0]
             # TODO: check the following if statement; old if is commented out
             # if int(ack_field,2) >= expected_ack:  # in-order ack
-            if ack_field >= expected_ack: # TODO: following lines are replaced
+            if int.from_bytes(ack_field, byteorder='big') >= expected_ack: # TODO: following lines are replaced
                 print("GBN: handle_ack: PACKET IS IN ORDER")
                 # self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
                 # self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
                 self.acknowledge_number(ack_field)
-                self.send_base = ack_field + 1
+                self.send_base = int.from_bytes(ack_field, byteorder='big') + 1
                 print("PRINTING THE ACK FIELD:")
                 print(ack_field)
                 # TODO: ADDED THE FOLLOWING LINE:
@@ -108,10 +108,10 @@ class GBN(PacketHandler):
     def update_ack_queue(self, seq_num: int):
         self.expected_ACK_queue.put(seq_num)
 
-    def acknowledge_number(self, seq_num: int):      # GBN is cumulative so pop all numbers <= seq_num
+    def acknowledge_number(self, seq_num: bytes):      # GBN is cumulative so pop all numbers <= seq_num
         while not self.expected_ACK_queue.empty():
             head = self.expected_ACK_queue.queue[0]  # Get the first element without dequeuing
-            if head <= seq_num:
+            if head <= int.from_bytes(seq_num, byteorder='big'):
                 # Pop the element from the queue
                 self.expected_ACK_queue.get()
             else:

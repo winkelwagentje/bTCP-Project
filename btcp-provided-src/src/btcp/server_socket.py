@@ -67,9 +67,6 @@ class BTCPServerSocket(BTCPSocket):
         # Make sure the example timer exists from the start.
         self._example_timer = None
 
-        # timer for handshake time, no segments rcvd timer
-        self.timer = ResettableTimer(TIMER_TICK/1000, self.lossy_layer_tick)
-
         
         # Number of tries to establish
         self._SYN_tries = 0

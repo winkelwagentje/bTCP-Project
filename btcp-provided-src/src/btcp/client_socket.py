@@ -60,10 +60,6 @@ class BTCPClientSocket(BTCPSocket):
         self._SYN_TRIES = 0
         self._FIN_TRIES = 0
 
-        # timer for handshake time, no segments rcvd timer
-        self.timer = ResettableTimer(TIMER_TICK/1000, self.lossy_layer_tick)
-
-
 
     ###########################################################################
     ### The following section is the interface between the transport layer  ###
@@ -368,12 +364,21 @@ class BTCPClientSocket(BTCPSocket):
         if self._state != BTCPStates.ESTABLISHED:
             logger.debug("cannot call shutdown when connection is not ESTABLISHED")
         else:   # TODO: check sequence number
-            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, fin_set=True, window=self._window)
-            header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, fin_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=0, fin_set=True, window=self._window)
+            header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=0, fin_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
+            
             self._lossy_layer.send_segment(header + bytes(PAYLOAD_SIZE))
-            # self.packet_handler.current_SN += 1 TODO: check where this happens
 
-            self.timer.stop()
+            self.packet_handler.current_SN += 1 
+            self.update_state(BTCPStates.FIN_SENT)
+
+            self.packet_handler.ack_timer.stop()
+            self.timer.reset()
+
+            while not self._state == BTCPStates.CLOSED:
+                time.sleep(0.1)
+            
+
 
 
     def close(self):
