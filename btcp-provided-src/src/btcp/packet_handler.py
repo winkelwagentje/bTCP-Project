@@ -24,7 +24,6 @@ class PacketHandler(ABC):
 
     def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
         pkt_queue = queue.Queue()                    # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
-        print("packet handler: sending data")
         try:
             while len(data) > 0:
                 if len(data) >= PAYLOAD_SIZE:
@@ -34,7 +33,6 @@ class PacketHandler(ABC):
                     pkt_queue.put(data)
                     data = bytes(0)
         except queue.Full:
-            print("packet handler: pkt queue full")
             logger.info(f"Too much data for packet queue. {pkt_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
             
         try:
@@ -45,12 +43,9 @@ class PacketHandler(ABC):
             self.seg_queue = self.build_seg_queue(pkt_list)
 
         except queue.Full:  # TODO HALLE WEG
-            print("packet handler: seg queue full")
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
 
         n_seg_send = min(self.seg_queue.qsize() * PAYLOAD_SIZE, len(data))  # the number of bytes loaded in queue to send
-
-        print("packet handler: preparing to send segments")
 
         self.send_window_segments() 
 
@@ -64,21 +59,15 @@ class PacketHandler(ABC):
         an empty bytes object and depending on the specific handler it might buffer or discard the data recieved.
         """ 
 
-        print("packet handler: handling a rcvd segment")
         seq_field, ack_field, flag_byte, _, datalen, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         payload = segment[HEADER_SIZE:HEADER_SIZE+datalen]
         
 
         if flag_byte & fACK:
-            print("\t it is an ACK")
             data = self.handle_ack(ack_field)
         else:
-            print("\t it is a segment containing data")
             data = self.handle_data(seq_field, payload)
-        print("packet_handler: UPDATING last_received IN NEXT LINE")
         self.last_received = seq_field
-        print(f"packet handler: handled_rcvd_seg: last received: {self.last_received}, seq: {seq_field}")
-        print(f"{data}")
 
         return data
 
