@@ -139,6 +139,7 @@ class BTCPClientSocket(BTCPSocket):
                         print("client: recieved a segment while established")
                         self._established_segment_received(segment)
                     case BTCPStates.FIN_SENT:
+                        print("client: fin sent segment received")
                         self._fin_sent_segment_received(segment)
 
     def _syn_segment_received(self, segment):
@@ -171,7 +172,7 @@ class BTCPClientSocket(BTCPSocket):
         recv ACK, process ACK
         recv FIN|ACK -> send ACK
         """
-        
+        print("client: fin sent segment received: ENTERED FUNCTION")
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         if flags == fACK:
             self.packet_handler.handle_ack(struct.pack("!H", ack_num)) # TODO ? - dieks
@@ -179,8 +180,15 @@ class BTCPClientSocket(BTCPSocket):
         if flags == fFIN + fACK:
             # TODO: what seqnum and acknum to use?
 
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=0, acknum=seq_num, ack_set=True, window=self._window)
+            header = BTCPSocket.build_segment_header(seqnum=0, acknum=seq_num, ack_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
+
+            segment = header + bytes(PAYLOAD_SIZE)
+
+            self._lossy_layer.send_segment(segment)
             self.update_state(BTCPStates.CLOSED)
-            pass
+
+            # TODO: FIX TIMEOUT && MAX RETRIES EXCEEDED.
 
 
 

@@ -146,17 +146,20 @@ class BTCPServerSocket(BTCPSocket):
             seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
             if not BTCPSocket.verify_checksum(segment):
                 # probably just ignore / drop the packet.
-                print(BTCPSocket.in_cksum(segment))
+                print(f"IN THE IF NOT VERIFY CHECKSUM:  {BTCPSocket.in_cksum(segment)}")
                 return
             else:
                 print("SERVER: reached else in lossylayersegmentreceived")
                 match self._state:
                     case BTCPStates.ACCEPTING: 
+                        print("SERVER: matched to ACCEPTING")
                         self._accepting_segment_received(segment)
                     case BTCPStates.CLOSING: 
                         # for now we ignore past FIN received segments
+                        print("SERVER: matched to CLOSING")
                         self._closing_segment_received(segment)
                     case BTCPStates.SYN_RCVD:
+                        print("SERVER: matched to SYN_RCVD")
                         self._syn_segment_received(segment)
                     case BTCPStates.ESTABLISHED:
                         print("SERVER ESTABLISHED: RECEIVING SEGMENT")
