@@ -44,7 +44,8 @@ class GBN(PacketHandler):
 
         for i in range(min(self.seg_queue.qsize(), self.window_size)): 
             segment = self.seg_queue.get(0)
-            print("GBN: snd window segments: ABOUT TO SEND SEGMENT LOSSY LAYER")
+            print("GBN: snd window segments")
+            print("GBN: current seqnum:", self.current_SN)
             self.lossy_layer.send_segment(segment)
             print("GBN: send window segments, type of lossy layer:")
             print(type(self.lossy_layer))
