@@ -40,15 +40,9 @@ class GBN(PacketHandler):
 
         self.ack_timer.reset()
 
-        print("GBN: sending window segments")
-
         for i in range(min(self.seg_queue.qsize(), self.window_size)): 
             segment = self.seg_queue.get(0)
-            print("GBN: snd window segments")
-            print("GBN: current seqnum:", self.current_SN)
             self.lossy_layer.send_segment(segment)
-            print("GBN: send window segments, type of lossy layer:")
-            print(type(self.lossy_layer))
             seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
             self.update_ack_queue(seq)
 
@@ -56,23 +50,17 @@ class GBN(PacketHandler):
 
     def handle_ack(self, ack_field: bytes):
         # Implement the logic to handle acknowledgment for GBN
-        print("GBN: handle_ack: ENTERING THE HANDLE ACK")
         if self.expected_ACK_queue.qsize() > 0:
-            print("GBN: handle_ack: QUEUE IS NOT EMPTY")
             expected_ack = self.expected_ACK_queue.queue[0]
             # TODO: check the following if statement; old if is commented out
             # if int(ack_field,2) >= expected_ack:  # in-order ack
-            if int.from_bytes(ack_field, byteorder='big') >= expected_ack: # TODO: following lines are replaced
-                print("GBN: handle_ack: PACKET IS IN ORDER")
+            if ack_field >= expected_ack: # TODO: following lines are replaced
                 # self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
                 # self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
                 self.acknowledge_number(ack_field)
-                self.send_base = int.from_bytes(ack_field, byteorder='big') + 1
-                print("PRINTING THE ACK FIELD:")
-                print(ack_field)
+                self.send_base = ack_field + 1
                 # TODO: ADDED THE FOLLOWING LINE:
                 self.ack_timer.reset()
-                print("GBN: handle_ack: TIMER WAS RESET")
 
         # out-of-order ack TODO TIMER?
         # now a timer must wait and at time-out window will be send again
@@ -85,7 +73,6 @@ class GBN(PacketHandler):
             # TODO: CHECK IF THE ABOVE + 2 INSTEAD OF + 1 MAKES SENSE
             # I THINK IT MAKES SENSE BECAUSE THE CLIENT TAKES 2 MESSAGES FOR THE HANDSHAKE IN AN IDEAL WORLD
             # THIS HAS EVERYTHING TO DO WITH HOW WE INITIALIZE LAST RECEIVED
-            print("GBN: handle_data: sequence field checks out")
             pseudo_header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
                                 ack_set=True, fin_set=False, window=self.window_size, length=0, checksum=0)
             header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
@@ -93,9 +80,6 @@ class GBN(PacketHandler):
             segment = header + bytes(PAYLOAD_SIZE)
             self.lossy_layer.send_segment(segment)
             return payload
-        else:
-            print("GBN: handle data: sequence number didnt match last received + 1") 
-            print(f"seq: {seq_field}, last rcvd: {self.last_received}")
         return bytes(0) 
 
     def build_ack_queue(self):
@@ -109,23 +93,20 @@ class GBN(PacketHandler):
     def update_ack_queue(self, seq_num: int):
         self.expected_ACK_queue.put(seq_num)
 
-    def acknowledge_number(self, seq_num: bytes):      # GBN is cumulative so pop all numbers <= seq_num
+    def acknowledge_number(self, seq_num: int):      # GBN is cumulative so pop all numbers <= seq_num
         while not self.expected_ACK_queue.empty():
             head = self.expected_ACK_queue.queue[0]  # Get the first element without dequeuing
-            if head <= int.from_bytes(seq_num, byteorder='big'):
+            if head <= seq_num:
                 # Pop the element from the queue
                 self.expected_ACK_queue.get()
             else:
                 break
 
     def timeout(self):
-        print("GBN: TIME OUT")
         if self.seg_queue.empty() and self.expected_ACK_queue.empty():
             self.ack_timer.stop()
-            print("ENTERED IF IN TIMEOUT")
             return
         else:
             self.send_window_segments()
-            print("ENTERED ELSE IN TIMEOUT")
             return
         

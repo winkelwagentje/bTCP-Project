@@ -122,24 +122,17 @@ class BTCPClientSocket(BTCPSocket):
             header, data = segment[:HEADER_SIZE], segment[HEADER_SIZE:]
             seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
 
-            print(f"client: incoming seg, flags: {flags}, SN {seq_num}, ACKn {ack_num}, chksm {checksum}, win {window}, len {data_len}")
             if not BTCPSocket.verify_checksum(segment):
                 # TODO: handle the case where the checksum is not correct.
                 # probably just ignore / drop the packet.
-                print("client: incorrect checksum, state:", self._state)
-                print("client: flags:", flags)
                 pass
             else:
-                print("client: correct checksum")
                 match self._state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
                     case BTCPStates.SYN_SENT:
-                        print("client: going to syn seg sent")
                         self._syn_segment_received(segment)
                     case BTCPStates.ESTABLISHED:
-                        print("client: recieved a segment while established")
                         self._established_segment_received(segment)
                     case BTCPStates.FIN_SENT:
-                        print("client: fin sent segment received")
                         self._fin_sent_segment_received(segment)
 
     def _syn_segment_received(self, segment):
@@ -148,9 +141,7 @@ class BTCPClientSocket(BTCPSocket):
         """
 
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        print(f"client: incoming seg, SYN_SENT: flags: {flags}, SN {seq_num}, ACKn {ack_num}")
         if flags & 7 == 6 and ack_num == self._ISN + 1: # check iff syn and ack flags are set, and if the ack is the expected ack.
-            print("client: Interpreting SYN ACK")
             pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True)
             header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
@@ -159,7 +150,6 @@ class BTCPClientSocket(BTCPSocket):
             self.timer.stop()  # timer not needed in ESTABLISHED state, handled by pkt handler
 
             self.update_state(BTCPStates.ESTABLISHED)
-            print("client: new state", self._state)
             # wellicht nog ISN/SN aanpassen (zowel in btcpsocket class als de packet handler)
 
         pass
@@ -172,7 +162,6 @@ class BTCPClientSocket(BTCPSocket):
         recv ACK, process ACK
         recv FIN|ACK -> send ACK
         """
-        print("client: fin sent segment received: ENTERED FUNCTION")
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         if flags == fACK:
             self.packet_handler.handle_ack(ack_num) # TODO ? - dieks
@@ -244,7 +233,6 @@ class BTCPClientSocket(BTCPSocket):
                     self.update_state(BTCPStates.CLOSED)
                 else:
                     self._FIN_TRIES += 1
-                    print("WE ZIJN ER GEKOMEN")
                     # TODO: sent a FIN
                     pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN, acknum=0, fin_set=True, window=self._window)
                     header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN, acknum=0, fin_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
@@ -322,7 +310,6 @@ class BTCPClientSocket(BTCPSocket):
         self.timer.reset()  # start timer
 
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
-            print(f"waiting {self._state}")
             time.sleep(0.1)
 
 

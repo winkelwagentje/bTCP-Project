@@ -93,7 +93,6 @@ class BTCPSocket:
 
         Mind that you change *what* signals that to the correct value(s).
         """
-        print("checksum: ", BTCPSocket.in_cksum(segment))
         return BTCPSocket.in_cksum(segment) == 0x0000
 
     @staticmethod
