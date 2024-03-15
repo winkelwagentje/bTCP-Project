@@ -64,9 +64,6 @@ class BTCPServerSocket(BTCPSocket):
         self._fin_received_in_closing = False
         logger.info("Socket initialized with recvbuf size 1000")
 
-        # Make sure the example timer exists from the start.
-        self._example_timer = None
-
         
         # Number of tries to establish
         self._SYN_tries = 0
@@ -165,8 +162,6 @@ class BTCPServerSocket(BTCPSocket):
                         print("SERVER ESTABLISHED: RECEIVING SEGMENT")
                         self._established_segment_received(segment)
 
-
-        self._expire_timers()
         return
 
 
@@ -215,8 +210,10 @@ class BTCPServerSocket(BTCPSocket):
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
 
         if flags == fACK:      # only the ACK flag is set
+            print("FACK")
             self.update_state(BTCPStates.CLOSED)
         elif flags == fFIN:    # only the FIN flag is set
+            print("FIN")
             # construct FIN|ACK message
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True)  #TODO: SCHRIJF COMMENTS PLEZ
             header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
@@ -229,6 +226,7 @@ class BTCPServerSocket(BTCPSocket):
             
         elif flags == 0 and not self._fin_received_in_closing and seq_num < self.packet_handler.last_received:    # no flags set, and not yet received a FIN
             # construct a ... TODO
+            print("NO FLAGS")
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True)
             header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
@@ -346,35 +344,6 @@ class BTCPServerSocket(BTCPSocket):
                 pass
             case BTCPStates.CLOSING:
                 self.update_state(BTCPStates.CLOSED)
-
-    # The following two functions show you how you could implement a (fairly
-    # inaccurate) but easy-to-use timer.
-    # You *do* have to call _expire_timers() from *both* lossy_layer_tick
-    # and lossy_layer_segment_received, for reasons explained in
-    # lossy_layer_tick. TODO TODO
-    def _start_example_timer(self):
-        if not self._example_timer:
-            logger.debug("Starting example timer.")
-            # Time in *nano*seconds, not milli- or microseconds.
-            # Using a monotonic clock ensures independence of weird stuff
-            # like leap seconds and timezone changes.
-            self._example_timer = time.monotonic_ns()
-        else:
-            logger.debug("Example timer already running.")
-
-
-
-    # TODO: CHECKEN:
-    # HEB self._example_timer AANGEPAST NAAR ONZE EIGEN TIMER
-    def _expire_timers(self):
-        curtime = time.monotonic_ns()
-        if not self._example_timer:
-            logger.debug("Example timer not running.")
-        elif curtime - self._example_timer > self._timeout * 1_000_000:
-            logger.debug("Example timer elapsed.")
-            self._example_timer = None
-        else:
-            logger.debug("Example timer not yet elapsed.")
 
 
     ###########################################################################
