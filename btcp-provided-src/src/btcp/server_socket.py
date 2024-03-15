@@ -505,10 +505,8 @@ class BTCPServerSocket(BTCPSocket):
         if not data:
             logger.info("No data received for 30 seconds.")
             logger.info("Returning empty bytes to caller, signalling disconnect.")
-        in_order_data = bytearray()
-        for segment in data:
-            in_order_data.extend(self.packet_handler.handle_rcvd_seg(segment))
-        return bytes(in_order_data)
+        data = bytes(data)
+        return data
 
 
     def close(self):
