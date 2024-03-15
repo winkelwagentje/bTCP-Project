@@ -14,6 +14,7 @@ class GBN(PacketHandler):
         seg_queue = queue.Queue()
 
         for pkt in pkt_list:
+            print("GBN: current SN:", self.current_SN)
             if len(pkt) > PAYLOAD_SIZE:  # data payload exceeds the allocated space for data
                 raise ValueError(f"data field of bTCP segment may contain a maximum of {PAYLOAD_SIZE} bytes.")
 
@@ -48,8 +49,9 @@ class GBN(PacketHandler):
 
         return
 
-    def handle_ack(self, ack_field: bytes):
+    def handle_ack(self, ack_field: int, seq_field: int):
         # Implement the logic to handle acknowledgment for GBN
+        self.last_received = max(self.last_received, seq_field)  # TODO overflow
         if self.expected_ACK_queue.qsize() > 0:
             expected_ack = self.expected_ACK_queue.queue[0]
             # TODO: check the following if statement; old if is commented out
@@ -69,7 +71,7 @@ class GBN(PacketHandler):
 
     def handle_data(self, seq_field: int, payload: bytes) -> bytes:
         # Implement the logic to handle data for GBN
-        if seq_field == self.last_received + 2:      # check if the message was received in order
+        if seq_field == self.last_received + 1:      # check if the message was received in order
             # TODO: CHECK IF THE ABOVE + 2 INSTEAD OF + 1 MAKES SENSE
             # I THINK IT MAKES SENSE BECAUSE THE CLIENT TAKES 2 MESSAGES FOR THE HANDSHAKE IN AN IDEAL WORLD
             # THIS HAS EVERYTHING TO DO WITH HOW WE INITIALIZE LAST RECEIVED
@@ -79,7 +81,9 @@ class GBN(PacketHandler):
                                 ack_set=True, fin_set=False, window=self.window_size, length=0, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
             self.lossy_layer.send_segment(segment)
+            self.last_received += 1
             return payload
+        print("GBN: SN not as expected", seq_field, self.last_received)
         return bytes(0) 
 
     def build_ack_queue(self):

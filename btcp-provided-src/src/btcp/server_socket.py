@@ -164,6 +164,8 @@ class BTCPServerSocket(BTCPSocket):
         else ignore all
         """
 
+        print(">server: rcvd in [ acc seg rvcd ]")
+
         logger.info("accepting a segment")
         logger.debug(segment)
 
@@ -177,6 +179,7 @@ class BTCPServerSocket(BTCPSocket):
             self.update_state(BTCPStates.SYN_RCVD)
             self.sender_SN = seq_num
             self.packet_handler.current_SN += 1
+            self.packet_handler.last_received = seq_num
 
             # construct segment
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window)
@@ -191,6 +194,9 @@ class BTCPServerSocket(BTCPSocket):
         """
         Helper method handling received segment in CLOSING state
         """
+
+        print(">server: rcvd in [ closing seg rvcd ]")
+
         logger.debug("_closing_segment_received called")
         logger.info("Segment received in CLOSING state.")
         logger.info("This needs to be properly implemented. "
@@ -229,6 +235,9 @@ class BTCPServerSocket(BTCPSocket):
         """
         This function handles all segments recieved when in the SYN state.
         """
+
+        print(">server: rcvd in [ syn seg rvcd ]")
+
         logger.debug("_syn_segment_received called")
         logger.info("Segment received in %s state",
                     self._state)
@@ -237,6 +246,8 @@ class BTCPServerSocket(BTCPSocket):
 
         if flags == fACK: # Only the ACK flag is set
             self.timer.stop()  # no timer needed in ESTABLISHED handled by packet_handler
+            print("--> server: going to ESTABLISHED")
+            self.packet_handler.last_received = seq_num
             self.update_state(BTCPStates.ESTABLISHED)
 
         elif flags == fSYN and seq_num == self.sender_SN: # Only the SYN flag is set and it is the same SYN as send at the CONNECTING state
@@ -251,6 +262,9 @@ class BTCPServerSocket(BTCPSocket):
             self._lossy_layer.send_segment(segment)
         
     def _established_segment_received(self, segment):
+
+        print(">server: rcvd in [ est seg rvcd ]")
+
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
 
         if flags == 0:  # no flags
@@ -298,6 +312,8 @@ class BTCPServerSocket(BTCPSocket):
         logger.debug("lossy_layer_tick called")
         # self._start_example_timer()TODO
         # self._expire_timers()
+
+        print("server: lossy layer tick", self._state)
 
         self.timer.reset()
 
@@ -459,6 +475,7 @@ class BTCPServerSocket(BTCPSocket):
             logger.info("No data received for 30 seconds.")
             logger.info("Returning empty bytes to caller, signalling disconnect.")
         data = bytes(data)
+        print("server-rcv: recieving data", data)
         return data
 
 

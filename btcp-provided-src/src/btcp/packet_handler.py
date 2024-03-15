@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 class PacketHandler(ABC):
     def __init__(self, window_size, lossy_layer, ISN=0):
         self.send_base = 0                          # send base is the head of the window; ie the index of the first element in the window to be send
-        self.current_SN = ISN + 1                   # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
+        self.current_SN = ISN+1                     # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
         self.expected_ACK_queue = queue.Queue()     # ack queue keeps track of the acks to be received, and in the specified order
         self.seg_queue = queue.Queue()
         self.sender_SN = 0    # initialized to 0 but is updated in the handshake to the 
                                # to the ISN of the other party.
-        self.last_received = ISN  # last_received is the sequence number of the last received segment
+        self.last_received = ISN+1  # last_received is the sequence number of the last received segment
         self.window_size = window_size
         self.lossy_layer = lossy_layer
         self.ack_timer = ResettableTimer(TIMER_TICK/1000, self.timeout)
@@ -64,10 +64,9 @@ class PacketHandler(ABC):
         
 
         if flag_byte & fACK:
-            data = self.handle_ack(ack_field)
+            data = self.handle_ack(ack_field, seq_field)
         else:
             data = self.handle_data(seq_field, payload)
-        self.last_received = seq_field
 
         return data
 
@@ -99,7 +98,7 @@ class PacketHandler(ABC):
         pass 
 
     @abstractmethod
-    def handle_ack(self, ack_field: bytes):
+    def handle_ack(self, ack_field: int, seq_field: int):
         """
         This function handles incoming messages with an ACK flag. It checks if the ACK is in order.
         If it is the send_base, and the ack_queue is updated in handle_ack_queue.

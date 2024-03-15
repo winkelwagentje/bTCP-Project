@@ -139,6 +139,7 @@ class BTCPClientSocket(BTCPSocket):
         """
         recv SYN|ACK -> send ACK
         """
+        print(">client: rcvd in [ syn seg rvcd ]")
 
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         if flags & 7 == 6 and ack_num == self._ISN + 1: # check iff syn and ack flags are set, and if the ack is the expected ack.
@@ -149,12 +150,17 @@ class BTCPClientSocket(BTCPSocket):
 
             self.timer.stop()  # timer not needed in ESTABLISHED state, handled by pkt handler
 
+            self.packet_handler.last_received = seq_num
+
+            print("--> client: going to ESTABLISHED")
+
             self.update_state(BTCPStates.ESTABLISHED)
             # wellicht nog ISN/SN aanpassen (zowel in btcpsocket class als de packet handler)
 
         pass
 
     def _established_segment_received(self, segment):
+        print(">client: rcvd in [ est seg rvcd ]")
         self.packet_handler.handle_rcvd_seg(segment)
     
     def _fin_sent_segment_received(self, segment):
@@ -162,9 +168,10 @@ class BTCPClientSocket(BTCPSocket):
         recv ACK, process ACK
         recv FIN|ACK -> send ACK
         """
+        print(">client: rcvd in [ fin sent rvcd ]")
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         if flags == fACK:
-            self.packet_handler.handle_ack(ack_num) # TODO ? - dieks
+            self.packet_handler.handle_ack(ack_num, seq_num) # TODO ? - dieks
 
         if flags == fFIN + fACK:
             # TODO: what seqnum and acknum to use?
@@ -206,6 +213,8 @@ class BTCPClientSocket(BTCPSocket):
         lossy_layer_segment_received or lossy_layer_tick.
         """
         logger.debug("lossy_layer_tick called")
+
+        print("client: lossy_layer_tick")
 
         match self._state:
             case BTCPStates.CLOSED:
@@ -341,6 +350,7 @@ class BTCPClientSocket(BTCPSocket):
         done later.
         """
         logger.debug("send called")
+        print("client-send: sending data", data)
         return self.packet_handler.send_data(data=data)
 
 
