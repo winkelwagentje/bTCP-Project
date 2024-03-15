@@ -246,6 +246,10 @@ class BTCPClientSocket(BTCPSocket):
                     self._FIN_TRIES += 1
                     print("WE ZIJN ER GEKOMEN")
                     # TODO: sent a FIN
+                    pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN, acknum=0, fin_set=True, window=self._window)
+                    header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN, acknum=0, fin_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
+            
+                    self._lossy_layer.send_segment(header + bytes(PAYLOAD_SIZE))
         
 
         return
