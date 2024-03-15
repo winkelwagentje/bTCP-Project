@@ -212,6 +212,7 @@ class BTCPServerSocket(BTCPSocket):
         if flags == fACK:      # only the ACK flag is set
             print("FACK")
             self.update_state(BTCPStates.CLOSED)
+            self._recvbuf.put(bytes(0))
         elif flags == fFIN:    # only the FIN flag is set
             print("FIN")
             # construct FIN|ACK message

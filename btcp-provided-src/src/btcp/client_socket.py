@@ -244,6 +244,7 @@ class BTCPClientSocket(BTCPSocket):
                     self.update_state(BTCPStates.CLOSED)
                 else:
                     self._FIN_TRIES += 1
+                    print("WE ZIJN ER GEKOMEN")
                     # TODO: sent a FIN
         
 

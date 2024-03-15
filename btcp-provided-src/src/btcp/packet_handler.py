@@ -43,8 +43,6 @@ class PacketHandler(ABC):
             while not pkt_queue.empty():
                 pkt_list.append(pkt_queue.get())
             self.seg_queue = self.build_seg_queue(pkt_list)
-            print("GBN: send_data: seq_queue:")
-            print(list(self.seg_queue.queue))
 
         except queue.Full:  # TODO HALLE WEG
             print("packet handler: seg queue full")
