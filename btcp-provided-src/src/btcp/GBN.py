@@ -44,7 +44,10 @@ class GBN(PacketHandler):
 
         for i in range(min(self.seg_queue.qsize(), self.window_size)): 
             segment = self.seg_queue.get(0)
+            print("GBN: snd window segments: ABOUT TO SEND SEGMENT LOSSY LAYER")
             self.lossy_layer.send_segment(segment)
+            print("GBN: send window segments, type of lossy layer:")
+            print(type(self.lossy_layer))
             seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
             self.update_ack_queue(seq)
 
@@ -64,15 +67,18 @@ class GBN(PacketHandler):
                 # self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
                 self.acknowledge_number(ack_field)
                 self.send_base = ack_field + 1
+                print("PRINTING THE ACK FIELD:")
+                print(ack_field)
                 # TODO: ADDED THE FOLLOWING LINE:
                 self.ack_timer.reset()
+                print("GBN: handle_ack: TIMER WAS RESET")
 
         # out-of-order ack TODO TIMER?
         # now a timer must wait and at time-out window will be send again
 
         return
 
-    def handle_data(self, seq_field: int):
+    def handle_data(self, seq_field: int, payload: bytes) -> bytes:
         # Implement the logic to handle data for GBN
         if seq_field == self.last_received + 2:      # check if the message was received in order
             # TODO: CHECK IF THE ABOVE + 2 INSTEAD OF + 1 MAKES SENSE
@@ -85,9 +91,11 @@ class GBN(PacketHandler):
                                 ack_set=True, fin_set=False, window=self.window_size, length=0, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
             self.lossy_layer.send_segment(segment)
+            return payload
         else:
             print("GBN: handle data: sequence number didnt match last received + 1") 
             print(f"seq: {seq_field}, last rcvd: {self.last_received}")
+        return bytes(0) 
 
     def build_ack_queue(self):
         # Implement the logic to build the acknowledgment queue for GBN
@@ -110,5 +118,13 @@ class GBN(PacketHandler):
                 break
 
     def timeout(self):
-        self.send_window_segments()
+        print("GBN: TIME OUT")
+        if self.seg_queue.empty() and self.expected_ACK_queue.empty():
+            self.ack_timer.stop()
+            print("ENTERED IF IN TIMEOUT")
+            return
+        else:
+            self.send_window_segments()
+            print("ENTERED ELSE IN TIMEOUT")
+            return
         

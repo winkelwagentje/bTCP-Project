@@ -43,6 +43,8 @@ class PacketHandler(ABC):
             while not pkt_queue.empty():
                 pkt_list.append(pkt_queue.get())
             self.seg_queue = self.build_seg_queue(pkt_list)
+            print("GBN: send_data: seq_queue:")
+            print(list(self.seg_queue.queue))
 
         except queue.Full:  # TODO HALLE WEG
             print("packet handler: seg queue full")
@@ -65,8 +67,8 @@ class PacketHandler(ABC):
         """ 
 
         print("packet handler: handling a rcvd segment")
-        seq_field, ack_field, flag_byte, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        payload = segment[HEADER_SIZE:]
+        seq_field, ack_field, flag_byte, _, datalen, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        payload = segment[HEADER_SIZE:HEADER_SIZE+datalen]
         
 
         if flag_byte & fACK:
@@ -74,10 +76,12 @@ class PacketHandler(ABC):
             data = self.handle_ack(ack_field)
         else:
             print("\t it is a segment containing data")
-            data = self.handle_data(seq_field)
+            data = self.handle_data(seq_field, payload)
         print("packet_handler: UPDATING last_received IN NEXT LINE")
         self.last_received = seq_field
         print(f"packet handler: handled_rcvd_seg: last received: {self.last_received}, seq: {seq_field}")
+        print(f"{data}")
+
         return data
 
     
@@ -118,7 +122,7 @@ class PacketHandler(ABC):
 
 
     @abstractmethod
-    def handle_data(self, seq_field: int):
+    def handle_data(self, seq_field: int, payload: bytes) -> bytes:
         '''
         This function handles incomming messages without an ACK flag, and thus this is a segment with data.
         If the data segment is in-order then this segment or possibly a buffer of data (depending on the specific handler) 
