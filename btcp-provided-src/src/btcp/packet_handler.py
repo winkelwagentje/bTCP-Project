@@ -20,7 +20,7 @@ class PacketHandler(ABC):
         self.last_received = ISN  # last_received is the sequence number of the last received segment
         self.window_size = window_size
         self.lossy_layer = lossy_layer
-        self.ack_timer = ResettableTimer(TIMER_TICK/100, self.timeout)
+        self.ack_timer = ResettableTimer(TIMER_TICK/1000, self.timeout)
 
     def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
         pkt_queue = queue.Queue()                    # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.

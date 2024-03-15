@@ -52,16 +52,20 @@ class GBN(PacketHandler):
 
     def handle_ack(self, ack_field: bytes):
         # Implement the logic to handle acknowledgment for GBN
-
+        print("GBN: handle_ack: ENTERING THE HANDLE ACK")
         if self.expected_ACK_queue.qsize() > 0:
+            print("GBN: handle_ack: QUEUE IS NOT EMPTY")
             expected_ack = self.expected_ACK_queue.queue[0]
             # TODO: check the following if statement; old if is commented out
             # if int(ack_field,2) >= expected_ack:  # in-order ack
             if ack_field >= expected_ack: # TODO: following lines are replaced
+                print("GBN: handle_ack: PACKET IS IN ORDER")
                 # self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
                 # self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
                 self.acknowledge_number(ack_field)
                 self.send_base = ack_field + 1
+                # TODO: ADDED THE FOLLOWING LINE:
+                self.ack_timer.reset()
 
         # out-of-order ack TODO TIMER?
         # now a timer must wait and at time-out window will be send again
