@@ -210,6 +210,8 @@ class BTCPServerSocket(BTCPSocket):
         logger.info("This needs to be properly implemented. "
                     "Currently only here for demonstration purposes.")
 
+        print("SERVER: ENTERED THE CLOSING SEGMENT RECEIVED FUNCTION")
+
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
 
         if flags == fACK:      # only the ACK flag is set
