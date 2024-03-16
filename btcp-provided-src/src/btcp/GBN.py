@@ -51,9 +51,6 @@ class GBN(PacketHandler):
 
     def handle_ack(self, ack_field: int, seq_field: int):
         # Implement the logic to handle acknowledgment for GBN
-        # TODO: I THINK THE FOLLOWING LINE IS NOT NECESSARY AS THE SEQUENCE NUMBER IS 
-        # IRRELEVANT IN AN ACK SEGMENT plez review
-        self.last_received = max(self.last_received, seq_field)  # TODO overflow
         if self.expected_ACK_queue.qsize() > 0:
             expected_ack = self.expected_ACK_queue.queue[0]
             # TODO: check the following if statement; old if is commented out
