@@ -86,7 +86,8 @@ class GBN(PacketHandler):
             self.last_received += 1
             return payload
         print("GBN: SN not as expected", seq_field, self.last_received)
-        return bytes(0) 
+        #return bytes(0)
+        return     
 
     def build_ack_queue(self):
         # Implement the logic to build the acknowledgment queue for GBN

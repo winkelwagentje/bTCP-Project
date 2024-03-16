@@ -209,6 +209,7 @@ class BTCPServerSocket(BTCPSocket):
 
         if flags == fACK:      # only the ACK flag is set
             self.update_state(BTCPStates.CLOSED)
+            print("server: putting b'' on the recv buffer")
             self._recvbuf.put(bytes(0))
         elif flags == fFIN:    # only the FIN flag is set
             # construct FIN|ACK message
@@ -276,7 +277,9 @@ class BTCPServerSocket(BTCPSocket):
         if flags == 0:  # no flags
             print("NO FLAGS")
             data = self.packet_handler.handle_rcvd_seg(segment)
-            self._recvbuf.put(data)
+            if data:
+                print(f"server: putting {data} on the recv buffer")
+                self._recvbuf.put(data)
         elif flags == fFIN and seq_num == self.packet_handler.last_received + 1:  # Only the FIN flag set and it is in-order
             # construct a segment with FIN ACK flags, we choose to increment SN by 1 and send the SN of the sender back as the ACK.
             # This is an abitrary choice only consistency is important.
@@ -461,6 +464,7 @@ class BTCPServerSocket(BTCPSocket):
         # data to appear.
         data = bytearray()
         logger.info("Retrieving data from receive queue")
+        print("server-rcv: receiving")
         try:
             # Wait until one segment becomes available in the buffer, or
             # timeout signalling disconnect.
@@ -468,16 +472,19 @@ class BTCPServerSocket(BTCPSocket):
             data.extend(self._recvbuf.get(block=True, timeout=30))
             logger.debug("First chunk of data retrieved.")
             logger.debug("Looping over rest of queue.")
+            print("server-rcv: first pkt received")
             while True:
                 # Empty the rest of the buffer, until queue.Empty exception
                 # exits the loop. If that happens, data contains received
                 # segments so that will *not* signal disconnect.
                 data.extend(self._recvbuf.get_nowait())
                 logger.debug("Additional chunk of data retrieved.")
+                print("server-rcv: additional pkt received")
         except queue.Empty:
             logger.debug("Queue emptied or timeout reached")
             pass # (Not break: the exception itself has exited the loop)
         logger.debug(data)
+        print("server-rcv: preparing to return")
         if not data:
             logger.info("No data received for 30 seconds.")
             logger.info("Returning empty bytes to caller, signalling disconnect.")

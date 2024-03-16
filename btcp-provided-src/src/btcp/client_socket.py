@@ -171,7 +171,7 @@ class BTCPClientSocket(BTCPSocket):
         print(">client: rcvd in [ fin sent rvcd ]")
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         if flags == fACK:
-            self.packet_handler.handle_ack(ack_num, seq_num) # TODO ? - dieks
+            self.packet_handler.handle_rcvd_seg(segment) # TODO ? - dieks
 
         if flags == fFIN + fACK:
             # TODO: what seqnum and acknum to use?
