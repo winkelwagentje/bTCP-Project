@@ -134,6 +134,8 @@ class BTCPServerSocket(BTCPSocket):
         # new segment rcvd so, reset timer
         self.timer.reset()
 
+        print(">SERVER: current SN", self.packet_handler.current_SN, "client SN", self.packet_handler.last_received)
+
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
@@ -179,6 +181,7 @@ class BTCPServerSocket(BTCPSocket):
             self.update_state(BTCPStates.SYN_RCVD)
             self.sender_SN = seq_num
             self.packet_handler.current_SN += 1
+            print("server: setting pkt_hndlr last received to", seq_num, "it was", self.packet_handler.last_received)
             self.packet_handler.last_received = seq_num
 
             # construct segment
@@ -249,6 +252,7 @@ class BTCPServerSocket(BTCPSocket):
             print("--> server: going to ESTABLISHED")
             # TODO: THE FOLLOWING LINE IS WEIRD IMO AS AGAIN, WE ARE DEALING AN ACK
             # I THINK THE SEQ NUM OF A ACK SEGMENT IS IRRELEVANT
+            print("server: setting pkt hndlr lest received to", seq_num, "it was", self.packet_handler.last_received)
             self.packet_handler.last_received = seq_num
             self.update_state(BTCPStates.ESTABLISHED)
 

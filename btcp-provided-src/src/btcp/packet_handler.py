@@ -17,7 +17,7 @@ class PacketHandler(ABC):
         self.seg_queue = queue.Queue()
         self.sender_SN = 0    # initialized to 0 but is updated in the handshake to the 
                                # to the ISN of the other party.
-        self.last_received = ISN+1  # last_received is the sequence number of the last received segment
+        self.last_received = 0  # last_received is the sequence number of the last received segment
         self.window_size = window_size
         self.lossy_layer = lossy_layer
         self.ack_timer = ResettableTimer(TIMER_TICK/1000, self.timeout)

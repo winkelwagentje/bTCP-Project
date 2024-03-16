@@ -20,14 +20,14 @@ class GBN(PacketHandler):
 
             padded_pkt = pkt + bytes(PAYLOAD_SIZE - len(pkt))
             # initialize a header with checksum set to 0. acknum = 0 as ACK flag is false anyway.
-            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.current_SN,acknum=0, window=self.window_size, length=len(pkt))
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window_size, length=len(pkt))
 
             # Now determine the checksum of the segment with the checksum field empty
             segment = pseudo_header + padded_pkt
             checksum = BTCPSocket.in_cksum(segment)
 
             # Construct the final header and segment, with correct checksum
-            header = BTCPSocket.build_segment_header(seqnum=self.current_SN,acknum=0, window=self.window_size, length=len(pkt), checksum=checksum)
+            header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window_size, length=len(pkt), checksum=checksum)
             self.current_SN += 1
             segment = header + padded_pkt
 
@@ -73,9 +73,10 @@ class GBN(PacketHandler):
 
     def handle_data(self, seq_field: int, payload: bytes) -> bytes:
         # Implement the logic to handle data for GBN
-        print("HANDLING DATA")
-        print(seq_field, payload)
+        print("GBN: HANDLING DATA")
+        print("GBN: pkt seq_field:", seq_field, "payload", payload, "self.last_received", self.last_received)
         if seq_field == self.last_received + 1:      # check if the message was received in order
+            print("GBN: packet in-order")
             # TODO: CHECK IF THE ABOVE + 2 INSTEAD OF + 1 MAKES SENSE
             # I THINK IT MAKES SENSE BECAUSE THE CLIENT TAKES 2 MESSAGES FOR THE HANDSHAKE IN AN IDEAL WORLD
             # THIS HAS EVERYTHING TO DO WITH HOW WE INITIALIZE LAST RECEIVED
