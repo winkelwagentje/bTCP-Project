@@ -3,3 +3,7 @@ meerdere fields updaten:
     packet_handler.py:  alles nalopen
     GBN.py:     jdshkdsf (Yves)
     client_socket.py: shutdown()
+
+FAILING TESTS:
+22, 70, 80, 90, 91
+NOTE: 22 works passes the test about 70% of the time or so.

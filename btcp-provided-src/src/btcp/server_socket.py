@@ -341,7 +341,7 @@ class BTCPServerSocket(BTCPSocket):
                 self.update_state(BTCPStates.CLOSED)
             case BTCPStates.SYN_RCVD:
                 if self._SYN_tries > self._MAX_SYN_TRIES:
-                    self._SYN_TRIES = 0
+                    self._SYN_tries= 0
                     self.update_state(BTCPStates.ACCEPTING)
                 else:
                     # construct a reply segment with ... TODO
@@ -351,7 +351,6 @@ class BTCPServerSocket(BTCPSocket):
                     
                     # update all constants and values
                     self._SYN_tries += 1
-                    self.update_state(BTCPStates.SYN_RCVD)
                     self._lossy_layer.send_segment(segment)
                     
             case BTCPStates.ESTABLISHED:
