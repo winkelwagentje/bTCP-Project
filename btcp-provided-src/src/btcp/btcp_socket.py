@@ -60,7 +60,7 @@ class BTCPSocket:
                      self._window, self._timeout)
         
         # timer for handshake time, no segments rcvd timer
-        self.timer = ResettableTimer(TIMER_TICK/1000, self.lossy_layer_tick)
+        self.timer = ResettableTimer(TIMER_TICK/1000, self.lossy_layer_tick_a) # TODO <- 
 
 
     def update_state(self, new_state):

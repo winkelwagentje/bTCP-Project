@@ -28,6 +28,7 @@ class GBN(PacketHandler):
 
             # Construct the final header and segment, with correct checksum
             header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window_size, length=len(pkt), checksum=checksum)
+            print("GBN: increasing the current sn to", self.current_SN+1)
             self.current_SN += 1
             segment = header + padded_pkt
 
@@ -41,9 +42,15 @@ class GBN(PacketHandler):
 
         self.ack_timer.reset()
 
+        print(f"GBN: {self.window_size}, {self.seg_queue.qsize()}")
+
         for i in range(min(self.seg_queue.qsize(), self.window_size)): 
-            segment = self.seg_queue.get(0)
+            try:
+                segment = self.seg_queue.queue[i]
+            except IndexError:
+                pass
             self.lossy_layer.send_segment(segment)
+            print("GBN: sending segment")
             seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
             self.update_ack_queue(seq)
 
@@ -51,6 +58,8 @@ class GBN(PacketHandler):
 
     def handle_ack(self, ack_field: int, seq_field: int):
         # Implement the logic to handle acknowledgment for GBN
+        print("GBN: handle ack", ack_field)
+
         if self.expected_ACK_queue.qsize() > 0:
             expected_ack = self.expected_ACK_queue.queue[0]
             # TODO: check the following if statement; old if is commented out
@@ -58,6 +67,18 @@ class GBN(PacketHandler):
             if ack_field >= expected_ack: # TODO: following lines are replaced
                 # self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
                 # self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
+                try:
+                    while not self.seg_queue.empty():
+                        segment = self.seg_queue.queue[0]
+                        seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+                        if seq <= ack_field:
+                            self.seg_queue.get()
+                        else:
+                            break
+                except IndexError:
+                    pass
+
+
                 self.acknowledge_number(ack_field)
                 self.send_base = ack_field + 1
                 # TODO: ADDED THE FOLLOWING LINE:
@@ -110,6 +131,7 @@ class GBN(PacketHandler):
                 break
 
     def timeout(self):
+        print("GBN: timeout")
         if self.seg_queue.empty() and self.expected_ACK_queue.empty():
             self.ack_timer.stop()
             return

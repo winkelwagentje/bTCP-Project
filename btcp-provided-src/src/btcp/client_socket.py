@@ -56,10 +56,13 @@ class BTCPClientSocket(BTCPSocket):
         logger.info("Socket initialized with sendbuf size 1000")
 
 		# max tries and tries
-        self._MAX_TRIES = 10
+        self._MAX_TRIES = 100
         self._SYN_TRIES = 0
         self._FIN_TRIES = 0
 
+    def lossy_layer_tick_a (self):
+        print("client: going through the timer")
+        self.lossy_layer_tick()
 
     ###########################################################################
     ### The following section is the interface between the transport layer  ###
@@ -114,6 +117,7 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
 
+        print("client: resetting the timer, a segment has been rcvd")
         self.timer.reset()  # segment rcvd so reset the timer
 
         if not len(segment) == SEGMENT_SIZE:
@@ -214,11 +218,13 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_tick called")
 
-        print("client: lossy_layer_tick")
+        print("client: lossy_layer_tick", self._state)
+
+        if self._state != BTCPStates.CLOSED:
+            print("client: restart a timer, NOT CLOSED")
+            self.timer.reset()
 
         match self._state:
-            case BTCPStates.CLOSED:
-                pass
             case BTCPStates.SYN_SENT:
                 if self._SYN_TRIES > self._MAX_TRIES:
                     self._SYN_TRIES = 0
@@ -239,6 +245,7 @@ class BTCPClientSocket(BTCPSocket):
             case BTCPStates.FIN_SENT:
                 if self._FIN_TRIES > self._MAX_TRIES:
                     self._FIN_TRIES = 0
+
                     self.update_state(BTCPStates.CLOSED)
                 else:
                     self._FIN_TRIES += 1
@@ -247,6 +254,10 @@ class BTCPClientSocket(BTCPSocket):
                     header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN, acknum=0, fin_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
             
                     self._lossy_layer.send_segment(header + bytes(PAYLOAD_SIZE))
+            case BTCPStates.CLOSED:
+                print("client: closed, stopping the timer")
+                self.timer.stop()
+            
         
 
         return
@@ -316,6 +327,7 @@ class BTCPClientSocket(BTCPSocket):
         self._lossy_layer.send_segment(segment)
         self.update_state(BTCPStates.SYN_SENT)
 
+        print("client: starting a timer at connect")
         self.timer.reset()  # start timer
 
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
@@ -374,6 +386,8 @@ class BTCPClientSocket(BTCPSocket):
         if self._state != BTCPStates.ESTABLISHED:
             logger.debug("cannot call shutdown when connection is not ESTABLISHED")
         else:   # TODO: check sequence number
+
+            print("<client-shutdown: preparing to shutdown and sending a FIN")
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=0, fin_set=True, window=self._window)
             header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=0, fin_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
             
@@ -382,13 +396,13 @@ class BTCPClientSocket(BTCPSocket):
             self.packet_handler.current_SN += 1 
             self.update_state(BTCPStates.FIN_SENT)
 
-            self.packet_handler.ack_timer.stop()
+            # self.packet_handler.ack_timer.stop()
+            print("client: starting a timer at shutdown")
             self.timer.reset()
 
             while not self._state == BTCPStates.CLOSED:
+                print("client: waiting to close", self._state)
                 time.sleep(0.1)
-            
-
 
 
     def close(self):

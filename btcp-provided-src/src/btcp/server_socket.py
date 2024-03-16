@@ -3,6 +3,7 @@ from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
 from btcp.GBN import GBN
 from btcp.resettable_timer import ResettableTimer
+import inspect
 
 import queue
 import time
@@ -67,8 +68,11 @@ class BTCPServerSocket(BTCPSocket):
         
         # Number of tries to establish
         self._SYN_tries = 0
-        self._MAX_SYN_TRIES = 10
+        self._MAX_SYN_TRIES = 100
 
+    def lossy_layer_tick_a (self):
+        print("server: going through the timer")
+        self.lossy_layer_tick()
 
 
     ###########################################################################
@@ -130,7 +134,7 @@ class BTCPServerSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
         logger.debug(segment)
-        print(">SERVER: LOSSY LAYER SEGMENT RECEIVED")
+        print(">SERVER: LOSSY LAYER SEGMENT RECEIVED", self._state)
         # new segment rcvd so, reset timer
         self.timer.reset()
 
@@ -283,6 +287,7 @@ class BTCPServerSocket(BTCPSocket):
         elif flags == fFIN and seq_num == self.packet_handler.last_received + 1:  # Only the FIN flag set and it is in-order
             # construct a segment with FIN ACK flags, we choose to increment SN by 1 and send the SN of the sender back as the ACK.
             # This is an abitrary choice only consistency is important.
+            print(">server: rcvd inorder fin, sending a FIN ACK")
             pseudo_header = BTCPSocket.build_segment_header(self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True)
             header = BTCPSocket.build_segment_header(self.packet_handler.current_SN+1, acknum=seq_num, ack_set=True, fin_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
@@ -295,6 +300,8 @@ class BTCPServerSocket(BTCPSocket):
             self.update_state(BTCPStates.CLOSING)
 
             self.timer.reset()
+        elif flags == fFIN:
+            print(f">server: rcvd a not in-order FIN. pkt seqnum: {seq_num}, expected seqnum: {self.packet_handler.last_received+1}")
         return # TODO: PLEZ overal last received incrementen. zenk you.
 
 
@@ -324,8 +331,10 @@ class BTCPServerSocket(BTCPSocket):
         # self._expire_timers()
 
         print("server: lossy layer tick", self._state)
+        print(f"server: {inspect.currentframe().f_code.co_name}")
 
-        self.timer.reset()
+        if self._state != BTCPStates.CLOSED:
+            self.timer.reset()
 
         match self._state:
             case BTCPStates.ACCEPTING:
@@ -352,6 +361,10 @@ class BTCPServerSocket(BTCPSocket):
                 pass
             case BTCPStates.CLOSING:
                 self.update_state(BTCPStates.CLOSED)
+            case BTCPStates.CLOSED:
+                print("server: closed, stopping the timer")
+                self.timer.stop()
+                self._recvbuf.put(bytes(0))
 
 
     ###########################################################################

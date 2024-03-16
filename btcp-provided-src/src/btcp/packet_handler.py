@@ -40,7 +40,10 @@ class PacketHandler(ABC):
             pkt_list = []
             while not pkt_queue.empty():
                 pkt_list.append(pkt_queue.get())
-            self.seg_queue = self.build_seg_queue(pkt_list)
+ 
+            seg_queue_ = self.build_seg_queue(pkt_list)
+            while not seg_queue_.empty():
+                self.seg_queue.put(seg_queue_.get())
 
         except queue.Full:  # TODO HALLE WEG
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
