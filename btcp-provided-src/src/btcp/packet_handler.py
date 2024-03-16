@@ -35,6 +35,8 @@ class PacketHandler(ABC):
         except queue.Full:
             logger.info(f"Too much data for packet queue. {pkt_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
             
+        #FIXME: not a fan of this try except; i think it would be better to put the try inside
+        # the while loop.
         try:
             # self.seg_queue = self.build_seg_queue(list(pkt_queue))  # TODO WEEWOO
             pkt_list = []
@@ -49,7 +51,7 @@ class PacketHandler(ABC):
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
 
         n_seg_send = min(self.seg_queue.qsize() * PAYLOAD_SIZE, len(data))  # the number of bytes loaded in queue to send
-
+        print(f"n_seg_send: {n_seg_send}")
         self.send_window_segments() 
 
         return data[:n_seg_send]

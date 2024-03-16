@@ -7,3 +7,6 @@ meerdere fields updaten:
 FAILING TESTS:
 22, 70, 80, 90, 91
 NOTE: 22 works passes the test about 70% of the time or so.
+IMPORTANT OBSERVATION: the max tries shouldnt be too higg; otherwise the test will fail.
+This is because the test will time out quite fast. When the max tries is about 10, it will
+perform fine. (Still not perfect though; it still fails at times.)

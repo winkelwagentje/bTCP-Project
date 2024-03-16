@@ -68,7 +68,7 @@ class BTCPServerSocket(BTCPSocket):
         
         # Number of tries to establish
         self._SYN_tries = 0
-        self._MAX_SYN_TRIES = 100
+        self._MAX_SYN_TRIES = 10
 
     def lossy_layer_tick_a (self):
         print("server: going through the timer")

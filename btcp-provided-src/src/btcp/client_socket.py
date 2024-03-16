@@ -56,7 +56,7 @@ class BTCPClientSocket(BTCPSocket):
         logger.info("Socket initialized with sendbuf size 1000")
 
 		# max tries and tries
-        self._MAX_TRIES = 100
+        self._MAX_TRIES = 10
         self._SYN_TRIES = 0
         self._FIN_TRIES = 0
 
@@ -243,6 +243,7 @@ class BTCPClientSocket(BTCPSocket):
                 # have been no incomming packets, so we do not have to call anything in the socket
                 pass
             case BTCPStates.FIN_SENT:
+                print("ENTERING FIN SENT CASE")
                 if self._FIN_TRIES > self._MAX_TRIES:
                     self._FIN_TRIES = 0
 
