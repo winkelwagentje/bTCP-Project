@@ -130,7 +130,7 @@ class BTCPServerSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
         logger.debug(segment)
-
+        print(">SERVER: LOSSY LAYER SEGMENT RECEIVED")
         # new segment rcvd so, reset timer
         self.timer.reset()
 
@@ -247,6 +247,8 @@ class BTCPServerSocket(BTCPSocket):
         if flags == fACK: # Only the ACK flag is set
             self.timer.stop()  # no timer needed in ESTABLISHED handled by packet_handler
             print("--> server: going to ESTABLISHED")
+            # TODO: THE FOLLOWING LINE IS WEIRD IMO AS AGAIN, WE ARE DEALING AN ACK
+            # I THINK THE SEQ NUM OF A ACK SEGMENT IS IRRELEVANT
             self.packet_handler.last_received = seq_num
             self.update_state(BTCPStates.ESTABLISHED)
 
@@ -268,6 +270,7 @@ class BTCPServerSocket(BTCPSocket):
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
 
         if flags == 0:  # no flags
+            print("NO FLAGS")
             data = self.packet_handler.handle_rcvd_seg(segment)
             self._recvbuf.put(data)
         elif flags == fFIN and seq_num == self.packet_handler.last_received + 1:  # Only the FIN flag set and it is in-order

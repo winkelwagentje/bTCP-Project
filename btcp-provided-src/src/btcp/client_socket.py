@@ -150,11 +150,15 @@ class BTCPClientSocket(BTCPSocket):
 
             self.timer.stop()  # timer not needed in ESTABLISHED state, handled by pkt handler
 
+            # TODO: I THINK THE LAST RECEIVED IS IRRELEVANT HERE AS WE ARE IN THE CLIENT
+            # THE CLIENT DOESNT NEED TO RECEIVE MESSAGES IN ORDER RIGHT?
             self.packet_handler.last_received = seq_num
 
             print("--> client: going to ESTABLISHED")
 
             self.update_state(BTCPStates.ESTABLISHED)
+            print("CURRENT SEQUENCE NUMBER OF CLIENT WHEN TURNED ESTABLISHED:")
+            print(self.packet_handler.current_SN)
             # wellicht nog ISN/SN aanpassen (zowel in btcpsocket class als de packet handler)
 
         pass
