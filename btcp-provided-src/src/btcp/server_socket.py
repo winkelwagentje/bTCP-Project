@@ -338,6 +338,7 @@ class BTCPServerSocket(BTCPSocket):
 
         match self._state:
             case BTCPStates.ACCEPTING:
+                #FIXME: we need to keep track of whether we want to go back to closed so fast
                 self.update_state(BTCPStates.CLOSED)
             case BTCPStates.SYN_RCVD:
                 if self._SYN_tries > self._MAX_SYN_TRIES:
