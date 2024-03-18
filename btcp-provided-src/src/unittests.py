@@ -209,6 +209,13 @@ class T(unittest.TestCase):
         self.assertTrue(run_in_separate_processes((), 
                                                   T._drop_every_other_ack_client, 
                                                   T._drop_every_other_ack_server, timeout=10))
+        
+    def test_70_ultra(self):
+        for i in range (200):
+            print(f"\n\n\n==============================NEW TEST 70 NR: {i}===============================\n\n\n")
+            self.assertTrue(run_in_separate_processes((), 
+                                                  T._drop_every_other_ack_client, 
+                                                  T._drop_every_other_ack_server, timeout=10))
 
     @staticmethod
     def _drop_every_other_ack_client():
