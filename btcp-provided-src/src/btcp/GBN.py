@@ -107,6 +107,13 @@ class GBN(PacketHandler):
             self.last_received += 1
             return payload
         print("GBN: SN not as expected", seq_field, self.last_received)
+        if seq_field < self.last_received + 1: # retransmit the ack
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
+                                ack_set=True, fin_set=False, window=self.window_size, length=0, checksum=0)
+            header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
+                                ack_set=True, fin_set=False, window=self.window_size, length=0, checksum=BTCPSocket.in_cksum(pseudo_header))
+            segment = header + bytes(PAYLOAD_SIZE)
+            self.lossy_layer.send_segment(segment)
         #return bytes(0)
         return     
 
