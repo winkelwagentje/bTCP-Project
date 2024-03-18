@@ -122,8 +122,9 @@ class T(unittest.TestCase):
     def test_22_ultra(self):
         for i in range (200):
             print(f"\n\n\n==============================NEW TEST 22 NR: {i}===============================\n\n\n")
-            self.test_22_corrupted_duplicates()
-        self.assertTrue(True)
+            self.assertTrue(run_in_separate_processes((), 
+                                                  T._corrupted_duplicates_client, 
+                                                  T._corrupted_duplicates_server, timeout=5))
 
     @staticmethod
     def _corrupted_duplicates_client():
@@ -144,6 +145,14 @@ class T(unittest.TestCase):
         self.assertTrue(run_in_separate_processes((), 
                                                   T._reordering_client, 
                                                   T._reordering_server, timeout=5))
+        
+    def test_30_ultra(self):
+        for i in range (200):
+            print(f"\n\n\n==============================NEW TEST 30 NR: {i}===============================\n\n\n")
+            self.assertTrue(run_in_separate_processes((), 
+                                                  T._reordering_client, 
+                                                  T._reordering_server, timeout=5))
+
     @staticmethod
     def _reordering_client():
         c = btcp.client_socket.BTCPClientSocket(DEFAULT_WINDOW, DEFAULT_TIMEOUT)
@@ -166,6 +175,13 @@ class T(unittest.TestCase):
         # In this test the server only gets retransmissions from the client after
         # a connection has been established
         self.assertTrue(run_in_separate_processes((), 
+                                                  T._drop_every_other_client, 
+                                                  T._drop_every_other_server, timeout=10))
+        
+    def test_60_ultra(self):
+        for i in range (200):
+            print(f"\n\n\n==============================NEW TEST 60 NR: {i}===============================\n\n\n")
+            self.assertTrue(run_in_separate_processes((), 
                                                   T._drop_every_other_client, 
                                                   T._drop_every_other_server, timeout=10))
 
