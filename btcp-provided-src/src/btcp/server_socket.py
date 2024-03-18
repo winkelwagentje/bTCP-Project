@@ -54,6 +54,7 @@ class BTCPServerSocket(BTCPSocket):
         super().__init__(window, timeout)
         self._lossy_layer = LossyLayer(self, SERVER_IP, SERVER_PORT, CLIENT_IP, CLIENT_PORT)
         self.packet_handler = GBN(window_size=window, lossy_layer=self._lossy_layer, ISN=0) # TODO: change ISN in negotiation.
+        print("server: done making the packet handler")
 
         # The data buffer used by lossy_layer_segment_received to move data
         # from the network thread into the application thread. Bounded in size.
@@ -138,7 +139,7 @@ class BTCPServerSocket(BTCPSocket):
         # new segment rcvd so, reset timer
         # self.timer.reset()
 
-        print(">SERVER: current SN", self.packet_handler.current_SN, "client SN", self.packet_handler.last_received)
+        # print(">SERVER: current SN", self.packet_handler.current_SN, "client SN", self.packet_handler.last_received)
 
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")

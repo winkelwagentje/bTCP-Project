@@ -118,6 +118,13 @@ class T(unittest.TestCase):
         self.assertTrue(run_in_separate_processes((), 
                                                   T._corrupted_duplicates_client, 
                                                   T._corrupted_duplicates_server, timeout=5))
+    
+    def test_22_ultra(self):
+        for i in range (200):
+            print(f"\n\n\n==============================NEW TEST 22 NR: {i}===============================\n\n\n")
+            self.test_22_corrupted_duplicates()
+        self.assertTrue(True)
+
     @staticmethod
     def _corrupted_duplicates_client():
         c = btcp.client_socket.BTCPClientSocket(DEFAULT_WINDOW, DEFAULT_TIMEOUT)
