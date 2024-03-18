@@ -69,7 +69,8 @@ class BTCPServerSocket(BTCPSocket):
         
         # Number of tries to establish
         self._SYN_tries = 0
-        self._MAX_SYN_TRIES = 10
+        self._accept_tries = 0
+        self._MAX_SYN_TRIES = 50
 
     def lossy_layer_tick_a (self):
         print("server: going through the timer")
@@ -340,8 +341,12 @@ class BTCPServerSocket(BTCPSocket):
 
         match self._state:
             case BTCPStates.ACCEPTING:
+                if self._accept_tries < self._MAX_SYN_TRIES:
+                    print("server: not closing yet")
                 #FIXME: we need to keep track of whether we want to go back to closed so fast
-                self.update_state(BTCPStates.CLOSED)
+                else:
+                    print("server: closing from accepting, tries exceeded")
+                    self.update_state(BTCPStates.CLOSED)
             case BTCPStates.SYN_RCVD:
                 if self._SYN_tries > self._MAX_SYN_TRIES:
                     self._SYN_tries= 0
