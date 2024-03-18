@@ -118,7 +118,6 @@ class BTCPClientSocket(BTCPSocket):
         logger.debug("lossy_layer_segment_received called")
 
         print("client: resetting the timer, a segment has been rcvd")
-        # self.timer.reset()  # segment rcvd so reset the timer
 
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
@@ -152,7 +151,6 @@ class BTCPClientSocket(BTCPSocket):
             segment = header + bytes(PAYLOAD_SIZE)
             self._lossy_layer.send_segment(segment)
 
-            #self.timer.stop()  # timer not needed in ESTABLISHED state, handled by pkt handler
 
             print("--> client: going to ESTABLISHED")
 
@@ -222,7 +220,6 @@ class BTCPClientSocket(BTCPSocket):
 
         if self._state != BTCPStates.CLOSED:
             print("client: restart a timer, NOT CLOSED")
-            pass
 
         match self._state:
             case BTCPStates.SYN_SENT:
@@ -257,10 +254,7 @@ class BTCPClientSocket(BTCPSocket):
                     self._lossy_layer.send_segment(header + bytes(PAYLOAD_SIZE))
             case BTCPStates.CLOSED:
                 print("client: closed, stopping the timer")
-                pass
             
-        
-
         return
 
 
@@ -365,8 +359,9 @@ class BTCPClientSocket(BTCPSocket):
         if self._state == BTCPStates.ESTABLISHED:
             print("client-send: sending data", data)
             return self.packet_handler.send_data(data=data)
+        
         print("trying to send data while connection not established")
-        return b''
+        return bytes(0)
 
 
     def shutdown(self):
