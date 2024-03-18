@@ -138,8 +138,6 @@ class BTCPServerSocket(BTCPSocket):
         # new segment rcvd so, reset timer
         # self.timer.reset()
 
-        print(">SERVER: current SN", self.packet_handler.current_SN, "client SN", self.packet_handler.last_received)
-
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
