@@ -58,9 +58,7 @@ class BTCPSocket:
         self._ISN = self.reset_ISN()
         logger.debug("Socket initialized with window %i and timeout %i",
                      self._window, self._timeout)
-        
-        # timer for handshake time, no segments rcvd timer
-        self.timer = ResettableTimer(TIMER_TICK/1000, self.lossy_layer_tick_a) # TODO <- 
+
 
 
     def update_state(self, new_state):

@@ -136,7 +136,6 @@ class BTCPServerSocket(BTCPSocket):
         logger.debug(segment)
         print(">SERVER: LOSSY LAYER SEGMENT RECEIVED", self._state)
         # new segment rcvd so, reset timer
-        self.timer.reset()
 
         print(">SERVER: current SN", self.packet_handler.current_SN, "client SN", self.packet_handler.last_received)
 
@@ -253,7 +252,6 @@ class BTCPServerSocket(BTCPSocket):
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
 
         if flags == fACK: # Only the ACK flag is set
-            self.timer.stop()  # no timer needed in ESTABLISHED handled by packet_handler
             print("--> server: going to ESTABLISHED")
             # TODO: THE FOLLOWING LINE IS WEIRD IMO AS AGAIN, WE ARE DEALING AN ACK
             # I THINK THE SEQ NUM OF A ACK SEGMENT IS IRRELEVANT
@@ -299,7 +297,6 @@ class BTCPServerSocket(BTCPSocket):
 
             self.update_state(BTCPStates.CLOSING)
 
-            self.timer.reset()
         elif flags == fFIN:
             print(f">server: rcvd a not in-order FIN. pkt seqnum: {seq_num}, expected seqnum: {self.packet_handler.last_received+1}")
         return # TODO: PLEZ overal last received incrementen. zenk you.
@@ -333,8 +330,6 @@ class BTCPServerSocket(BTCPSocket):
         print("server: lossy layer tick", self._state)
         print(f"server: {inspect.currentframe().f_code.co_name}")
 
-        if self._state != BTCPStates.CLOSED:
-            self.timer.reset()
 
         match self._state:
             case BTCPStates.ACCEPTING:
@@ -363,7 +358,6 @@ class BTCPServerSocket(BTCPSocket):
                 self.update_state(BTCPStates.CLOSED)
             case BTCPStates.CLOSED:
                 print("server: closed, stopping the timer")
-                self.timer.stop()
                 self._recvbuf.put(bytes(0))
 
 
@@ -423,7 +417,6 @@ class BTCPServerSocket(BTCPSocket):
             logger.debug(f"accept was called, but the server was not in the CLOSED state. Server is in {self._state} instead")
             logger.debug("accept performed.")
         
-        self.timer.reset()  # start timer
         self._state = BTCPStates.ACCEPTING
         self._ISN = self.reset_ISN()
         while self._state != BTCPStates.CLOSED and self._state != BTCPStates.ESTABLISHED:

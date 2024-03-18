@@ -329,7 +329,6 @@ class BTCPClientSocket(BTCPSocket):
         self.update_state(BTCPStates.SYN_SENT)
 
         print("client: starting a timer at connect")
-        self.timer.reset()  # start timer
 
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
             time.sleep(0.1)
@@ -399,7 +398,6 @@ class BTCPClientSocket(BTCPSocket):
 
             # self.packet_handler.ack_timer.stop()
             print("client: starting a timer at shutdown")
-            self.timer.reset()
 
             while not self._state == BTCPStates.CLOSED:
                 print("client: waiting to close", self._state)
