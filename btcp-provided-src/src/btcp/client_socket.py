@@ -163,7 +163,15 @@ class BTCPClientSocket(BTCPSocket):
 
     def _established_segment_received(self, segment):
         print(">client: rcvd in [ est seg rvcd ]")
-        self.packet_handler.handle_rcvd_seg(segment)
+        seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        if not flags == fSYN + fACK:
+            self.packet_handler.handle_rcvd_seg(segment)
+        else: # we are dealing with SYN | ACK
+            if ack_num == self._ISN + 1:
+                pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True)
+                header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+                segment = header + bytes(PAYLOAD_SIZE)
+                self._lossy_layer.send_segment(segment)
     
     def _fin_sent_segment_received(self, segment):
         """
