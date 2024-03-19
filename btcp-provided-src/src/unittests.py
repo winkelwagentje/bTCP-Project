@@ -245,6 +245,18 @@ class T(unittest.TestCase):
         self.assertTrue(run_in_separate_processes((), 
                                                   T._drop_every_other_always_client, 
                                                   T._drop_every_other_always_server, timeout=10))
+        
+    def test_80_ultra(self): 
+        # In this test both client and server only get retransmissions,
+        # including the segments from the handshakes.
+        #
+        # The barrier is needed here because the server might wait for an ACK on its FIN&ACK,
+        # which the client can't give if its process has exited.
+        for i in range (100):
+            print(f"\n\n\n==============================NEW TEST 80 NR: {i}===============================\n\n\n")
+            self.assertTrue(run_in_separate_processes((), 
+                                                    T._drop_every_other_always_client, 
+                                                    T._drop_every_other_always_server, timeout=10))
 
     @staticmethod
     def _drop_every_other_always_client():

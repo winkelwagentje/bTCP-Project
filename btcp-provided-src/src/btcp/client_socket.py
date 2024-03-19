@@ -56,7 +56,7 @@ class BTCPClientSocket(BTCPSocket):
         logger.info("Socket initialized with sendbuf size 1000")
 
 		# max tries and tries
-        self._MAX_TRIES = 10
+        self._MAX_TRIES = 50
         self._SYN_TRIES = 0
         self._FIN_TRIES = 0
 
@@ -393,6 +393,9 @@ class BTCPClientSocket(BTCPSocket):
         if self._state != BTCPStates.ESTABLISHED:
             logger.debug("cannot call shutdown when connection is not ESTABLISHED")
         else:   # TODO: check sequence number
+            while not self.packet_handler.expected_ACK_queue.empty():
+                print("client: waiting till expected ack queue is empty to send fin and close")
+                time.sleep(0.1)
 
             print("<client-shutdown: preparing to shutdown and sending a FIN")
             pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=0, fin_set=True, window=self._window)

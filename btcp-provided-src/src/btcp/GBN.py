@@ -67,6 +67,10 @@ class GBN(PacketHandler):
             if ack_field >= expected_ack: # TODO: following lines are replaced
                 # self.acknowledge_number(int(ack_field,2))  # mark all acks with lower number as rcvd
                 # self.send_base = int(ack_field, 2) + 1  # update start of the sending window 
+
+                # received an ack in-order, so connection is still valid and we can reset cur_tries for this sending window
+                self.cur_tries = 0
+
                 try:
                     while not self.seg_queue.empty():
                         segment = self.seg_queue.queue[0]
@@ -80,7 +84,7 @@ class GBN(PacketHandler):
 
 
                 self.acknowledge_number(ack_field)
-                self.send_base = ack_field + 1
+                self.send_base = ack_field + 1  # TODO: remove
                 # TODO: ADDED THE FOLLOWING LINE:
                 self.ack_timer.reset()
 
@@ -142,7 +146,14 @@ class GBN(PacketHandler):
         if self.seg_queue.empty() and self.expected_ACK_queue.empty():
             self.ack_timer.stop()
             return
-        else:
+        elif self.cur_tries < self.MAX_TRIES:
             self.send_window_segments()
+            self.cur_tries += 1
+            return
+        elif self.cur_tries >= self.MAX_TRIES:
+            # no acks received for MAX_TRIES times timeout so abandon this data sending
+            self.seg_queue = queue.Queue()
+            self.expected_ACK_queue = queue.Queue()
+            self.ack_timer.stop()
             return
         
