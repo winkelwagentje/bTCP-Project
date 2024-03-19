@@ -251,7 +251,7 @@ class BTCPServerSocket(BTCPSocket):
                     self._state)
 
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-
+        print(f"SYN_RCVD: seq: {seq_num}, ack: {ack_num}, flags: {flags}")
         if flags == fACK: # Only the ACK flag is set
             # self.timer.stop()  # no timer needed in ESTABLISHED handled by packet_handler
             print("--> server: going to ESTABLISHED")

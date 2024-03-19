@@ -124,7 +124,7 @@ class BTCPClientSocket(BTCPSocket):
         else:
             header, data = segment[:HEADER_SIZE], segment[HEADER_SIZE:]
             seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
-
+            print(f"client_lossy_layer_rcvd: flags: {flags}")
             if not BTCPSocket.verify_checksum(segment):
                 # TODO: handle the case where the checksum is not correct.
                 # probably just ignore / drop the packet.
@@ -134,6 +134,7 @@ class BTCPClientSocket(BTCPSocket):
                     case BTCPStates.SYN_SENT:
                         self._syn_segment_received(segment)
                     case BTCPStates.ESTABLISHED:
+                        print(f"flags: {flags}, in ESTABLISHED, so need to send ack")
                         self._established_segment_received(segment)
                     case BTCPStates.FIN_SENT:
                         self._fin_sent_segment_received(segment)
@@ -164,7 +165,7 @@ class BTCPClientSocket(BTCPSocket):
     def _established_segment_received(self, segment):
         print(">client: rcvd in [ est seg rvcd ]")
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if not flags == fSYN + fACK:
+        if flags != fSYN + fACK:
             self.packet_handler.handle_rcvd_seg(segment)
         else: # we are dealing with SYN | ACK
             print(f"client_socket: acknum: {ack_num}, ISN: {self._ISN}")
