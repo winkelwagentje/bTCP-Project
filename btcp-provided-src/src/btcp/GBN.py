@@ -14,7 +14,6 @@ class GBN(PacketHandler):
         seg_queue = queue.Queue()
 
         for pkt in pkt_list:
-            print("GBN: current SN:", self.current_SN)
             if len(pkt) > PAYLOAD_SIZE:  # data payload exceeds the allocated space for data
                 raise ValueError(f"data field of bTCP segment may contain a maximum of {PAYLOAD_SIZE} bytes.")
 
@@ -28,7 +27,6 @@ class GBN(PacketHandler):
 
             # Construct the final header and segment, with correct checksum
             header = BTCPSocket.build_segment_header(seqnum=self.current_SN+1,acknum=0, window=self.window_size, length=len(pkt), checksum=checksum)
-            print("GBN: increasing the current sn to", self.current_SN+1)
             self.current_SN += 1
             segment = header + padded_pkt
 
@@ -42,15 +40,12 @@ class GBN(PacketHandler):
 
         self.ack_timer.reset()
 
-        print(f"GBN: {self.window_size}, {self.seg_queue.qsize()}")
-
         for i in range(min(self.seg_queue.qsize(), self.window_size)): 
             try:
                 segment = self.seg_queue.queue[i]
             except IndexError:
                 pass
             self.lossy_layer.send_segment(segment)
-            print("GBN: sending segment")
             seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
             self.update_ack_queue(seq)
 
@@ -58,7 +53,6 @@ class GBN(PacketHandler):
 
     def handle_ack(self, ack_field: int, seq_field: int):
         # Implement the logic to handle acknowledgment for GBN
-        print("GBN: handle ack", ack_field)
 
         if self.expected_ACK_queue.qsize() > 0:
             expected_ack = self.expected_ACK_queue.queue[0]
@@ -95,10 +89,7 @@ class GBN(PacketHandler):
 
     def handle_data(self, seq_field: int, payload: bytes) -> bytes:
         # Implement the logic to handle data for GBN
-        print("GBN: HANDLING DATA")
-        print("GBN: pkt seq_field:", seq_field, "payload", payload, "self.last_received", self.last_received)
         if seq_field == self.last_received + 1:      # check if the message was received in order
-            print("GBN: packet in-order")
             # TODO: CHECK IF THE ABOVE + 2 INSTEAD OF + 1 MAKES SENSE
             # I THINK IT MAKES SENSE BECAUSE THE CLIENT TAKES 2 MESSAGES FOR THE HANDSHAKE IN AN IDEAL WORLD
             # THIS HAS EVERYTHING TO DO WITH HOW WE INITIALIZE LAST RECEIVED
@@ -110,7 +101,6 @@ class GBN(PacketHandler):
             self.lossy_layer.send_segment(segment)
             self.last_received += 1
             return payload
-        print("GBN: SN not as expected", seq_field, self.last_received)
         if seq_field < self.last_received + 1: # retransmit the ack
             pseudo_header = BTCPSocket.build_segment_header(seqnum=seq_field, acknum=seq_field, syn_set=False, \
                                 ack_set=True, fin_set=False, window=self.window_size, length=0, checksum=0)
@@ -142,7 +132,6 @@ class GBN(PacketHandler):
                 break
 
     def timeout(self):
-        print("GBN: timeout")
         if self.seg_queue.empty() and self.expected_ACK_queue.empty():
             self.ack_timer.stop()
             return

@@ -22,9 +22,6 @@ class PacketHandler(ABC):
         self.lossy_layer = lossy_layer
         self.ack_timer = ResettableTimer(TIMER_TICK/1000, self.timeout)
 
-        self.MAX_TRIES = 50  # TODO: docu
-        self.cur_tries = 0
-
     def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
         pkt_queue = queue.Queue()                    # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
         try:
@@ -54,7 +51,6 @@ class PacketHandler(ABC):
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
 
         n_seg_send = min(self.seg_queue.qsize() * PAYLOAD_SIZE, len(data))  # the number of bytes loaded in queue to send
-        print(f"n_seg_send: {n_seg_send}")
         self.send_window_segments() 
 
         return data[:n_seg_send]
