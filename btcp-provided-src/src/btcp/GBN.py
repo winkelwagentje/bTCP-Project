@@ -146,12 +146,13 @@ class GBN(PacketHandler):
         if self.seg_queue.empty() and self.expected_ACK_queue.empty():
             self.ack_timer.stop()
             return
-        elif self.cur_tries < self.MAX_TRIES:
+        elif self.cur_tries < MAX_TRIES:
             self.send_window_segments()
             self.cur_tries += 1
             return
-        elif self.cur_tries >= self.MAX_TRIES:
+        elif self.cur_tries >= MAX_TRIES:
             # no acks received for MAX_TRIES times timeout so abandon this data sending
+            print("GBN ERASING EXPECTED ACKS")
             self.seg_queue = queue.Queue()
             self.expected_ACK_queue = queue.Queue()
             self.ack_timer.stop()

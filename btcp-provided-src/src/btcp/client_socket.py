@@ -56,7 +56,6 @@ class BTCPClientSocket(BTCPSocket):
         logger.info("Socket initialized with sendbuf size 1000")
 
 		# max tries and tries
-        self._MAX_TRIES = 50
         self._SYN_TRIES = 0
         self._FIN_TRIES = 0
 
@@ -233,7 +232,7 @@ class BTCPClientSocket(BTCPSocket):
 
         match self._state:
             case BTCPStates.SYN_SENT:
-                if self._SYN_TRIES > self._MAX_TRIES:
+                if self._SYN_TRIES > MAX_TRIES:
                     self._SYN_TRIES = 0
                     self.update_state(BTCPStates.CLOSED)
                 else:
@@ -251,7 +250,7 @@ class BTCPClientSocket(BTCPSocket):
                 pass
             case BTCPStates.FIN_SENT:
                 print("ENTERING FIN SENT CASE")
-                if self._FIN_TRIES > self._MAX_TRIES:
+                if self._FIN_TRIES > MAX_TRIES:
                     self._FIN_TRIES = 0
 
                     self.update_state(BTCPStates.CLOSED)
