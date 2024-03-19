@@ -167,6 +167,7 @@ class BTCPClientSocket(BTCPSocket):
         if not flags == fSYN + fACK:
             self.packet_handler.handle_rcvd_seg(segment)
         else: # we are dealing with SYN | ACK
+            print(f"client_socket: acknum: {ack_num}, ISN: {self._ISN}")
             if ack_num == self._ISN + 1:
                 pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True)
                 header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))

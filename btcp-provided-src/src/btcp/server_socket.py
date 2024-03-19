@@ -268,10 +268,15 @@ class BTCPServerSocket(BTCPSocket):
             segment = header + bytes(PAYLOAD_SIZE)
 
             # update all constants and values
-            self.packet_handler.current_SN += 1
+            # self.packet_handler.current_SN += 1
 
             self._lossy_layer.send_segment(segment)
         
+        elif flags == 0: # in syn rcvd, so not yet established, but we are already recvng data
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window)
+            header = BTCPSocket.build_segment_header(seqnum=self._ISN, acknum=seq_num+1, syn_set=True, ack_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
+            self._lossy_layer.send_segment(segment)
+
     def _established_segment_received(self, segment):
 
         print(">server: rcvd in [ est seg rvcd ]")
