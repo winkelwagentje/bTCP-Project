@@ -1,9 +1,7 @@
 from btcp.packet_handler import PacketHandler
 import queue
-from queue import Queue
 from btcp.btcp_socket import BTCPSocket
 from btcp.constants import *
-from math import ceil
 
 class GBN(PacketHandler):
     def __init__(self, window_size, lossy_layer, ISN):
@@ -28,9 +26,13 @@ class GBN(PacketHandler):
             # Construct the final header and segment, with correct checksum
             header = BTCPSocket.build_segment_header(seqnum=(self.current_SN+1) % MAX_INT,acknum=0, window=self.window_size, length=len(pkt), checksum=checksum)
             print("GBN: increasing the current sn to", (self.current_SN+1) % MAX_INT)
-            self.current_SN += 1
-            self.current_SN %= MAX_INT
+            #self.current_SN += 1
+            #self.current_SN %= MAX_INT
             segment = header + padded_pkt
+
+
+            self.current_SN = BTCPSocket.increment(self.current_SN)
+            segment = BTCPSocket.build_segment(seqnum=self.current_SN, acknum=0, window=self.window_size, length=len(pkt), payload=padded_pkt)
 
             seg_queue.put(segment)
 

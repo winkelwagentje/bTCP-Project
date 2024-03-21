@@ -143,8 +143,8 @@ class BTCPSocket:
     def build_segment(seqnum, acknum,
                              syn_set=False, ack_set=False, fin_set=False,
                              window=0x01, length=0, payload=bytes(PAYLOAD_SIZE)):
-        pseudo_header = BTCPSocket.build_segment_header(seqnum, acknum, syn_set, ack_set, fin_set, window, length, checksum=0)
-        header = BTCPSocket.build_segment_header(seqnum, acknum, syn_set, ack_set, fin_set, window, length, checksum=BTCPSocket.in_cksum(pseudo_header))
+        pseudo_header = BTCPSocket.build_segment_header(seqnum, acknum, syn_set, ack_set, fin_set, window, length)
+        header = BTCPSocket.build_segment_header(seqnum, acknum, syn_set, ack_set, fin_set, window, length, checksum=BTCPSocket.in_cksum(pseudo_header+payload))
         segment = header + payload
         return segment
     
