@@ -22,7 +22,6 @@ class BTCPServerSocket(BTCPSocket):
         self._fin_received_in_closing = False
         logger.info("Socket initialized with recvbuf size 1000")
 
-        
         # Number of tries to establish
         self._SYN_tries = 0
         self._accept_tries = 0
@@ -133,7 +132,7 @@ class BTCPServerSocket(BTCPSocket):
 
         if flags == 0:  # no flags
             data = self.packet_handler.handle_rcvd_seg(segment)
-            print("server: got the data")
+            logger.debug("server: got the data")
             if data:
                 self._recvbuf.put(data)
 

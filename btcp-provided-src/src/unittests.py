@@ -147,7 +147,7 @@ class T(unittest.TestCase):
                                                   T._reordering_server, timeout=5))
         
     def test_30_ultra(self):
-        for i in range (20):
+        for i in range (100):
             print(f"\n\n\n==============================NEW TEST 30 NR: {i}===============================\n\n\n")
             self.assertTrue(run_in_separate_processes((), 
                                                   T._reordering_client, 
@@ -179,7 +179,7 @@ class T(unittest.TestCase):
                                                   T._drop_every_other_server, timeout=10))
         
     def test_60_ultra(self):
-        for i in range (20):
+        for i in range (100):
             print(f"\n\n\n==============================NEW TEST 60 NR: {i}===============================\n\n\n")
             self.assertTrue(run_in_separate_processes((), 
                                                   T._drop_every_other_client, 
@@ -211,7 +211,7 @@ class T(unittest.TestCase):
                                                   T._drop_every_other_ack_server, timeout=10))
         
     def test_70_ultra(self):
-        for i in range (20):
+        for i in range (100):
             print(f"\n\n\n==============================NEW TEST 70 NR: {i}===============================\n\n\n")
             self.assertTrue(run_in_separate_processes((), 
                                                   T._drop_every_other_ack_client, 
@@ -252,7 +252,7 @@ class T(unittest.TestCase):
         #
         # The barrier is needed here because the server might wait for an ACK on its FIN&ACK,
         # which the client can't give if its process has exited.
-        for i in range (10):
+        for i in range (100):
             print(f"\n\n\n==============================NEW TEST 80 NR: {i}===============================\n\n\n")
             self.assertTrue(run_in_separate_processes((), 
                                                     T._drop_every_other_always_client, 
@@ -284,7 +284,7 @@ class T(unittest.TestCase):
                                                   T._reconnect_server, timeout=10))
         
     def test_90_ultra(self):
-        for i in range (200):
+        for i in range (100):
             print(f"\n\n\n==============================NEW TEST 90 NR: {i}===============================\n\n\n")
             self.assertTrue(run_in_separate_processes((), 
                                                   T._reconnect_client, 
@@ -317,7 +317,7 @@ class T(unittest.TestCase):
                                                   T._old_segments_client, 
                                                   T._old_segments_server, timeout=10))
     def test_91_ultra(self):
-        for i in range (10):
+        for i in range (100):
             print(f"\n\n\n==============================NEW TEST 91 NR: {i}===============================\n\n\n")
             barrier = multiprocessing.Barrier(2)
             self.assertTrue(run_in_separate_processes((barrier,), 

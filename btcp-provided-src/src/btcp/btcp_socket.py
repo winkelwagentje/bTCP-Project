@@ -1,7 +1,6 @@
 import struct
 import logging
 from enum import IntEnum
-from btcp.resettable_timer import ResettableTimer
 from btcp.constants import *
 import random as r
 
