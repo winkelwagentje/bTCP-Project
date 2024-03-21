@@ -326,6 +326,7 @@ class BTCPClientSocket(BTCPSocket):
             return 
         
         logger.debug("connect called")
+        self._ISN = self.reset_ISN()
         ISN = self._ISN
         print("client-connect: ISN", ISN)
         # send 16 bit SNF, set SYN FLAG

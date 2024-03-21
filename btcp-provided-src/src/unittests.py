@@ -316,6 +316,13 @@ class T(unittest.TestCase):
         self.assertTrue(run_in_separate_processes((barrier,), 
                                                   T._old_segments_client, 
                                                   T._old_segments_server, timeout=10))
+    def test_91_ultra(self):
+        for i in range (200):
+            print(f"\n\n\n==============================NEW TEST 91 NR: {i}===============================\n\n\n")
+            barrier = multiprocessing.Barrier(2)
+            self.assertTrue(run_in_separate_processes((barrier,), 
+                                                  T._old_segments_client, 
+                                                  T._old_segments_server, timeout=10))
    
     @staticmethod
     def _old_segments_client(barrier):
