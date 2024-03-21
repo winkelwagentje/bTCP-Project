@@ -103,6 +103,7 @@ class GBN(PacketHandler):
             self.lossy_layer.send_segment(segment)
             self.last_received += 1
             self.last_received %= MAX_INT
+            print("GBN returning payload")
             return payload
         print("GBN: SN not as expected", seq_field, self.last_received)
         if ((seq_field < (self.last_received+1)%MAX_INT and abs(seq_field - (self.last_received+1)%MAX_INT) < MAX_DIFF) \

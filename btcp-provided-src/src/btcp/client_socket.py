@@ -136,6 +136,7 @@ class BTCPClientSocket(BTCPSocket):
         logger.debug("connect called")
                      
         # send 16 bit SNF, set SYN FLAG
+        self._ISN = self.reset_ISN()
         segment = BTCPSocket.build_segment(seqnum=self._ISN, acknum=0, syn_set=True, window=self._window)
 
         self._lossy_layer.send_segment(segment)

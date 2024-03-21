@@ -1,13 +1,10 @@
-from btcp.btcp_socket import BTCPSocket, BTCPStates, BTCPSignals
+from btcp.btcp_socket import BTCPSocket, BTCPStates
 from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
 from btcp.GBN import GBN
-from btcp.resettable_timer import ResettableTimer
-import inspect
 
 import queue
 import time
-import struct
 import logging
 
 
@@ -54,7 +51,6 @@ class BTCPServerSocket(BTCPSocket):
 
     def lossy_layer_segment_received(self, segment):
         logger.debug("lossy_layer_segment_received called")
-        logger.debug(segment)
         # TODO: packet_handler may not be set to a packet_handler yet and still is None
 
         if len(segment) == SEGMENT_SIZE and self.verify_checksum(segment):
@@ -74,7 +70,6 @@ class BTCPServerSocket(BTCPSocket):
 
     def _accepting_segment_received(self, segment):
         logger.info("accepting a segment")
-        logger.debug(segment)
 
         seq_num, _, flags, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         # Slice data from incoming segment.
@@ -155,7 +150,7 @@ class BTCPServerSocket(BTCPSocket):
             segment = BTCPSocket.build_segment(seqnum=self._ISN, acknum=BTCPSocket.increment(seq_num), syn_set=True, ack_set=True, window=self._window)
 
             # update all constants and values
-            self.packet_handler.current_SN = BTCPSocket.increment(self.packet_handler.current_SN)
+            # self.packet_handler.current_SN = BTCPSocket.increment(self.packet_handler.current_SN)
 
             self._lossy_layer.send_segment(segment)
         
@@ -170,9 +165,10 @@ class BTCPServerSocket(BTCPSocket):
 
         if flags == 0:  # no flags
             data = self.packet_handler.handle_rcvd_seg(segment)
+            print("server: got the data")
             if data:
                 self._recvbuf.put(data)
-        elif flags == fFIN and seq_num == (self.packet_handler.last_received + 1) % MAX_INT:  # Only the FIN flag set and it is in-order
+        elif flags == fFIN and seq_num == BTCPSocket.increment(self.packet_handler.last_received):  # Only the FIN flag set and it is in-order
             # construct a segment with FIN ACK flags, we choose to increment SN by 1 and send the SN of the sender back as the ACK.
             # This is an abitrary choice only consistency is important.
             segment = BTCPSocket.build_segment(seqnum=BTCPSocket.increment(self.packet_handler.current_SN), acknum=seq_num, ack_set=True, fin_set=True, window=self._window)
@@ -374,7 +370,6 @@ class BTCPServerSocket(BTCPSocket):
         except queue.Empty:
             logger.debug("Queue emptied or timeout reached")
             pass # (Not break: the exception itself has exited the loop)
-        logger.debug(data)
         if not data:
             logger.info("No data received for 30 seconds.")
             logger.info("Returning empty bytes to caller, signalling disconnect.")
