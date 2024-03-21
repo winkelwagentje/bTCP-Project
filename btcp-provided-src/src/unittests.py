@@ -284,7 +284,7 @@ class T(unittest.TestCase):
                                                   T._reconnect_server, timeout=10))
         
     def test_90_ultra(self):
-        for i in range (20):
+        for i in range (200):
             print(f"\n\n\n==============================NEW TEST 90 NR: {i}===============================\n\n\n")
             self.assertTrue(run_in_separate_processes((), 
                                                   T._reconnect_client, 
@@ -314,6 +314,13 @@ class T(unittest.TestCase):
         # which should only cause you trouble when you don't use random initial sequence numbers
         barrier = multiprocessing.Barrier(2)
         self.assertTrue(run_in_separate_processes((barrier,), 
+                                                  T._old_segments_client, 
+                                                  T._old_segments_server, timeout=10))
+    def test_91_ultra(self):
+        for i in range (200):
+            print(f"\n\n\n==============================NEW TEST 91 NR: {i}===============================\n\n\n")
+            barrier = multiprocessing.Barrier(2)
+            self.assertTrue(run_in_separate_processes((barrier,), 
                                                   T._old_segments_client, 
                                                   T._old_segments_server, timeout=10))
    
