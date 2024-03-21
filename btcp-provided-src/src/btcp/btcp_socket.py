@@ -3,6 +3,7 @@ import logging
 from enum import IntEnum
 from btcp.resettable_timer import ResettableTimer
 from btcp.constants import *
+import random as r
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,7 @@ class BTCPSocket:
         self._timeout = timeout
         self._state = BTCPStates.CLOSED
         self._ISN = self.reset_ISN()
+        self._ISN_sender = 0
         logger.debug("Socket initialized with window %i and timeout %i",
                      self._window, self._timeout)
 
@@ -65,7 +67,7 @@ class BTCPSocket:
         self._state = new_state
 
     def reset_ISN(self):
-        return 0  # TODO: make random.
+        return r.randint(0,MAX_INT-1)
 
     @staticmethod
     def in_cksum(segment):                              # calculates the internet checksum over the data
@@ -136,4 +138,13 @@ class BTCPSocket:
         flag_byte = flag_byte & 0b111
 
         return seq_num, acknum, flag_byte, window, length, checksum
+    
+    @staticmethod
+    def build_segment(seqnum, acknum,
+                             syn_set=False, ack_set=False, fin_set=False,
+                             window=0x01, length=0, payload=bytes(PAYLOAD_SIZE)):
+        pseudo_header = BTCPSocket.build_segment_header(seqnum, acknum, syn_set, ack_set, fin_set, window, length, checksum=0)
+        header = BTCPSocket.build_segment_header(seqnum, acknum, syn_set, ack_set, fin_set, window, length, checksum=BTCPSocket.in_cksum(pseudo_header))
+        segment = header + payload
+        return segment
 

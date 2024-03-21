@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class PacketHandler(ABC):
-    def __init__(self, window_size, lossy_layer, ISN=0):
+    def __init__(self, window_size, lossy_layer, ISN):
         self.send_base = 0                          # send base is the head of the window; ie the index of the first element in the window to be send
-        self.current_SN = ISN+1                     # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
+        self.current_SN = (ISN+1)%MAX_INT            # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
         self.expected_ACK_queue = queue.Queue()     # ack queue keeps track of the acks to be received, and in the specified order
         self.seg_queue = queue.Queue()
         self.sender_SN = 0    # initialized to 0 but is updated in the handshake to the 
@@ -22,7 +22,6 @@ class PacketHandler(ABC):
         self.lossy_layer = lossy_layer
         self.ack_timer = ResettableTimer(TIMER_TICK/1000, self.timeout)
 
-        self.MAX_TRIES = 50
         self.cur_tries = 0
 
     def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them

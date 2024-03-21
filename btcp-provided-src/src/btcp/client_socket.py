@@ -46,9 +46,9 @@ class BTCPClientSocket(BTCPSocket):
         initialized, but do *not* call connect from here.
         """
         logger.debug("__init__ called")
+        self.packet_handler = None
         super().__init__(window, timeout)
         self._lossy_layer = LossyLayer(self, CLIENT_IP, CLIENT_PORT, SERVER_IP, SERVER_PORT)
-        self.packet_handler = GBN(window_size=window, lossy_layer=self._lossy_layer, ISN=0) # TODO: CHANGE ISN IN HAND SHAKE / NEGOTIATION.
 
         # The data buffer used by send() to send data from the application
         # thread into the network thread. Bounded in size.
@@ -56,7 +56,6 @@ class BTCPClientSocket(BTCPSocket):
         logger.info("Socket initialized with sendbuf size 1000")
 
 		# max tries and tries
-        self._MAX_TRIES = 50
         self._SYN_TRIES = 0
         self._FIN_TRIES = 0
 
@@ -116,6 +115,8 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
 
+        # TODO: packet_handler may not be set to a packet_handler yet and still is None 
+
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
@@ -140,11 +141,13 @@ class BTCPClientSocket(BTCPSocket):
         """
 
         seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if flags & 7 == 6 and ack_num == self._ISN + 1: # check iff syn and ack flags are set, and if the ack is the expected ack.
-            pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True)
-            header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+        if flags & 7 == 6 and ack_num == (self._ISN + 1) % MAX_INT: # check iff syn and ack flags are set, and if the ack is the expected ack.
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=(seq_num+1) % MAX_INT, ack_set=True)
+            header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=(seq_num+1) % MAX_INT, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)
             self._lossy_layer.send_segment(segment)
+
+            self._ISN_sender = seq_num  # setting sender ISN
 
 
 
@@ -158,9 +161,9 @@ class BTCPClientSocket(BTCPSocket):
         if flags != fSYN + fACK:
             self.packet_handler.handle_rcvd_seg(segment)
         else: # we are dealing with SYN | ACK
-            if ack_num == self._ISN + 1:
-                pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True)
-                header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=seq_num+1, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
+            if ack_num == (self._ISN + 1) % MAX_INT:
+                pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=(seq_num+1) % MAX_INT, ack_set=True)
+                header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=(seq_num+1) % MAX_INT, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
                 segment = header + bytes(PAYLOAD_SIZE)
                 self._lossy_layer.send_segment(segment)
     
@@ -219,7 +222,7 @@ class BTCPClientSocket(BTCPSocket):
             pass
         match self._state:
             case BTCPStates.SYN_SENT:
-                if self._SYN_TRIES > self._MAX_TRIES:
+                if self._SYN_TRIES > MAX_TRIES:
                     self._SYN_TRIES = 0
                     self.update_state(BTCPStates.CLOSED)
                 else:
@@ -236,7 +239,7 @@ class BTCPClientSocket(BTCPSocket):
                 # have been no incomming packets, so we do not have to call anything in the socket
                 pass
             case BTCPStates.FIN_SENT:
-                if self._FIN_TRIES > self._MAX_TRIES:
+                if self._FIN_TRIES > MAX_TRIES:
                     self._FIN_TRIES = 0
 
                     self.update_state(BTCPStates.CLOSED)
@@ -316,6 +319,7 @@ class BTCPClientSocket(BTCPSocket):
         self._lossy_layer.send_segment(segment)
         self.update_state(BTCPStates.SYN_SENT)
 
+        self.packet_handler = GBN(window_size=self._window, lossy_layer=self._lossy_layer, ISN=ISN)
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
             time.sleep(0.1)
 
@@ -349,9 +353,8 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("send called")
         if self._state == BTCPStates.ESTABLISHED:
-            return self.packet_handler.send_data(data=data)
-        
-        return bytes(0)
+            return len(self.packet_handler.send_data(data=data))
+        return 0
 
 
     def shutdown(self):
@@ -377,12 +380,13 @@ class BTCPClientSocket(BTCPSocket):
             while not self.packet_handler.expected_ACK_queue.empty():
                 time.sleep(0.1)
 
-            pseudo_header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=0, fin_set=True, window=self._window)
-            header = BTCPSocket.build_segment_header(seqnum=self.packet_handler.current_SN+1, acknum=0, fin_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
+            pseudo_header = BTCPSocket.build_segment_header(seqnum=(self.packet_handler.current_SN+1) % MAX_INT, acknum=0, fin_set=True, window=self._window)
+            header = BTCPSocket.build_segment_header(seqnum=(self.packet_handler.current_SN+1) % MAX_INT, acknum=0, fin_set=True, window=self._window, checksum=BTCPSocket.in_cksum(pseudo_header))
             
             self._lossy_layer.send_segment(header + bytes(PAYLOAD_SIZE))
 
-            self.packet_handler.current_SN += 1 
+            self.packet_handler.current_SN += 1
+            self.packet_handler.current_SN %= MAX_INT 
             self.update_state(BTCPStates.FIN_SENT)
 
             # self.packet_handler.ack_timer.stop()
