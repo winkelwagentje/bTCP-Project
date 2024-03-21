@@ -115,18 +115,12 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("lossy_layer_segment_received called")
 
-        # TODO: packet_handler may not be set to a packet_handler yet and still is None 
+        # packet_handler may not be set to a packet_handler yet and still is None 
 
         if not len(segment) == SEGMENT_SIZE:
             raise NotImplementedError("Segment not long enough handle not implemented")
         else:
-            header, data = segment[:HEADER_SIZE], segment[HEADER_SIZE:]
-            seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(header)
-            if not BTCPSocket.verify_checksum(segment):
-                # TODO: handle the case where the checksum is not correct.
-                # probably just ignore / drop the packet.
-                pass
-            else:
+            if BTCPSocket.verify_checksum(segment):
                 match self._state: # just consider the transitions in the FSM where we receive anything. the rest is not handled here.
                     case BTCPStates.SYN_SENT:
                         self._syn_segment_received(segment)
@@ -140,8 +134,8 @@ class BTCPClientSocket(BTCPSocket):
         recv SYN|ACK -> send ACK
         """
 
-        seq_num, ack_num, flags, window, data_len, checksum = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if flags & 7 == 6 and ack_num == (self._ISN + 1) % MAX_INT: # check iff syn and ack flags are set, and if the ack is the expected ack.
+        seq_num, ack_num, flags, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        if flags == fSYN+fACK and ack_num == BTCPSocket.increment(self._ISN): # check iff syn and ack flags are set, and if the ack is the expected ack.
             pseudo_header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=(seq_num+1) % MAX_INT, ack_set=True)
             header = BTCPSocket.build_segment_header(seqnum=ack_num, acknum=(seq_num+1) % MAX_INT, ack_set=True, checksum=BTCPSocket.in_cksum(pseudo_header))
             segment = header + bytes(PAYLOAD_SIZE)

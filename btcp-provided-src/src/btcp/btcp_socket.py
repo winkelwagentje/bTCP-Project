@@ -147,4 +147,8 @@ class BTCPSocket:
         header = BTCPSocket.build_segment_header(seqnum, acknum, syn_set, ack_set, fin_set, window, length, checksum=BTCPSocket.in_cksum(pseudo_header))
         segment = header + payload
         return segment
+    
+    @staticmethod
+    def increment(var, incr=1, mod=MAX_INT):
+        return (var+incr) % mod
 
