@@ -51,7 +51,7 @@ class BTCPServerSocket(BTCPSocket):
     def _accepting_segment_received(self, segment):
         logger.info("accepting a segment")
 
-        seq_num, _, flags, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        seq_num, _, flags, window, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         # Slice data from incoming segment.
 
 
@@ -65,6 +65,7 @@ class BTCPServerSocket(BTCPSocket):
             self.packet_handler.last_received = seq_num
 
             # construct segment
+            self._window = max(1, min(self._window, window))
             segment = BTCPSocket.build_segment(seqnum=self._ISN, acknum=BTCPSocket.increment(seq_num),syn_set=True, ack_set=True, window=self._window)
             self._lossy_layer.send_segment(segment)
         return
@@ -132,6 +133,7 @@ class BTCPServerSocket(BTCPSocket):
 
         if flags == 0:  # no flags
             data = self.packet_handler.handle_rcvd_seg(segment)
+            self.packet_handler.window_size = max(1, min(self.packet_handler.window_size, self._recvbuf.maxsize - self._recvbuf.qsize()))
             logger.debug("server: got the data")
             if data:
                 self._recvbuf.put(data)

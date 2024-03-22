@@ -60,8 +60,9 @@ class BTCPClientSocket(BTCPSocket):
         """
         recv SYN|ACK -> send ACK
         """
-        seq_num, ack_num, flags, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if flags == fSYN+fACK and ack_num == BTCPSocket.increment(self._ISN): # check iff syn and ack flags are set, and if the ack is the expected ack.
+        seq_num, ack_num, flags, window, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        if flags == fSYN+fACK and ack_num == BTCPSocket.increment(self._ISN): # check iff syn and ack flags are set, and if the ack is the expected ack. self.packet_handler.window_size = window
+            self.packet_handler.window_size = window
             segment = BTCPSocket.build_segment(seqnum=ack_num, acknum=BTCPSocket.increment(seq_num), ack_set=True, window=self._window)
             self._lossy_layer.send_segment(segment)
 

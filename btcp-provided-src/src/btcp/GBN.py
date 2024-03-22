@@ -98,6 +98,7 @@ class GBN(PacketHandler):
                 break
 
     def timeout(self):
+        self.window_size = max(self.window_size//2, 1)
         if self.seg_queue.empty() and self.expected_ACK_queue.empty():
             self.ack_timer.stop()
             return

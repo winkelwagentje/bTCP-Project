@@ -65,11 +65,11 @@ class PacketHandler(ABC):
         an empty bytes object and depending on the specific handler it might buffer or discard the data recieved.
         """ 
 
-        seq_field, ack_field, flag_byte, _, datalen, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        seq_field, ack_field, flag_byte, window, datalen, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         payload = segment[HEADER_SIZE:HEADER_SIZE+datalen]
-        
 
         if flag_byte & fACK:
+            self.window_size = max(1, window)
             data = self.handle_ack(ack_field, seq_field)
         else:
             data = self.handle_data(seq_field, payload)
