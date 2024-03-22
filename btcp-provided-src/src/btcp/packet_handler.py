@@ -26,6 +26,7 @@ class PacketHandler(ABC):
 
     def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
         pkt_queue = queue.Queue()                    # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
+        init_data = data
         try:
             while len(data) > 0:
                 if len(data) >= PAYLOAD_SIZE:
@@ -39,6 +40,7 @@ class PacketHandler(ABC):
             
         #FIXME: not a fan of this try except; i think it would be better to put the try inside
         # the while loop.
+        nr_seg_sent = 0
         try:
             # self.seg_queue = self.build_seg_queue(list(pkt_queue))  # TODO WEEWOO
             pkt_list = []
@@ -48,15 +50,14 @@ class PacketHandler(ABC):
             seg_queue_ = self.build_seg_queue(pkt_list)
             while not seg_queue_.empty():
                 self.seg_queue.put(seg_queue_.get())
+                nr_seg_sent += 1
 
         except queue.Full:  # TODO HALLE WEG
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
 
-        n_seg_send = min(self.seg_queue.qsize() * PAYLOAD_SIZE, len(data))  # the number of bytes loaded in queue to send
-        self.send_window_segments()
-        logger.info(f"packethandler n_segment sent is: {n_seg_send}")
+        self.send_window_segments() 
 
-        return data[:n_seg_send]
+        return init_data[:nr_seg_sent]
 
     def handle_rcvd_seg(self, segment) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
         """ 

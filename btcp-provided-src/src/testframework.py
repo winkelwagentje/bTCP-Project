@@ -26,7 +26,6 @@ LARGE_INPUTFILE = "large_input.py"
 OUTPUTFILE = "testframework-output.file"
 TIMEOUT = 100
 WINSIZE = 100
-#LOGLEVEL = "WARNING"
 LOGLEVEL = "INFO"
 INTF = "lo"
 NETEM_ADD     = "sudo tc qdisc add dev {} root netem".format(INTF)
