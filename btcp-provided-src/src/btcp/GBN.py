@@ -2,6 +2,9 @@ from btcp.packet_handler import PacketHandler
 import queue
 from btcp.btcp_socket import BTCPSocket
 from btcp.constants import *
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GBN(PacketHandler):
     def __init__(self, window_size, lossy_layer, ISN):
@@ -111,5 +114,6 @@ class GBN(PacketHandler):
             self.seg_queue = queue.Queue()
             self.expected_ACK_queue = queue.Queue()
             self.ack_timer.stop()
+            logger.warning("GBN: emptying queues")
             return
         

@@ -116,7 +116,7 @@ def btcp_file_transfer_client():
 
         # If we exit this loop, all data has been read. We exit the with-block
         # which automatically closes the input file.
-        logger.info("All chunks read & sent.")
+        logger.warning("All chunks read & sent.")
 
     # Disconnect, since we're done reading the file and done sending.
     # Note that by default this doesn't do *anything*.
