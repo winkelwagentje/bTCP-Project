@@ -40,7 +40,7 @@ class PacketHandler(ABC):
             
         #FIXME: not a fan of this try except; i think it would be better to put the try inside
         # the while loop.
-        nr_seg_sent = 0
+        nr_bytes_sent = 0
         try:
             # self.seg_queue = self.build_seg_queue(list(pkt_queue))  # TODO WEEWOO
             pkt_list = []
@@ -50,14 +50,14 @@ class PacketHandler(ABC):
             seg_queue_ = self.build_seg_queue(pkt_list)
             while not seg_queue_.empty():
                 self.seg_queue.put(seg_queue_.get())
-                nr_seg_sent += 1
+                nr_bytes_sent += PAYLOAD_SIZE
 
         except queue.Full:  # TODO HALLE WEG
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
 
         self.send_window_segments() 
 
-        return init_data[:nr_seg_sent]
+        return init_data[:nr_bytes_sent]
 
     def handle_rcvd_seg(self, segment) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
         """ 
