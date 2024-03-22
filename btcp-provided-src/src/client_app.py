@@ -107,6 +107,7 @@ def btcp_file_transfer_client():
             while data:
                 logger.info("Queueing part of chunk for sending")
                 sent_bytes = s.send(data)
+                logger.info(f"number of bytes succsefully sent: {sent_bytes}")
                 del data[:sent_bytes]
                 time.sleep(0.005)
             # In outer loop: Read new data.
