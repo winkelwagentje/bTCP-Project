@@ -220,7 +220,6 @@ class BottomHandler:
         self._lossy_layer._bTCP_socket.lossy_layer_segment_received(segment)
 
     def tick(self):
-        print("lossy layer: tikkie")
         self._lossy_layer._bTCP_socket.lossy_layer_tick()
         pass
 

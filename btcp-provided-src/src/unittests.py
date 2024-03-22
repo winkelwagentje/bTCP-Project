@@ -119,13 +119,6 @@ class T(unittest.TestCase):
                                                   T._corrupted_duplicates_client, 
                                                   T._corrupted_duplicates_server, timeout=5))
     
-    def test_22_ultra(self):
-        for i in range (20):
-            print(f"\n\n\n==============================NEW TEST 22 NR: {i}===============================\n\n\n")
-            self.assertTrue(run_in_separate_processes((), 
-                                                  T._corrupted_duplicates_client, 
-                                                  T._corrupted_duplicates_server, timeout=5))
-
     @staticmethod
     def _corrupted_duplicates_client():
         c = btcp.client_socket.BTCPClientSocket(DEFAULT_WINDOW, DEFAULT_TIMEOUT)
@@ -146,13 +139,6 @@ class T(unittest.TestCase):
                                                   T._reordering_client, 
                                                   T._reordering_server, timeout=5))
         
-    def test_30_ultra(self):
-        for i in range (20):
-            print(f"\n\n\n==============================NEW TEST 30 NR: {i}===============================\n\n\n")
-            self.assertTrue(run_in_separate_processes((), 
-                                                  T._reordering_client, 
-                                                  T._reordering_server, timeout=5))
-
     @staticmethod
     def _reordering_client():
         c = btcp.client_socket.BTCPClientSocket(DEFAULT_WINDOW, DEFAULT_TIMEOUT)
@@ -178,13 +164,6 @@ class T(unittest.TestCase):
                                                   T._drop_every_other_client, 
                                                   T._drop_every_other_server, timeout=10))
         
-    def test_60_ultra(self):
-        for i in range (20):
-            print(f"\n\n\n==============================NEW TEST 60 NR: {i}===============================\n\n\n")
-            self.assertTrue(run_in_separate_processes((), 
-                                                  T._drop_every_other_client, 
-                                                  T._drop_every_other_server, timeout=10))
-
     @staticmethod
     def _drop_every_other_client():
         c = btcp.client_socket.BTCPClientSocket(DEFAULT_WINDOW, DEFAULT_TIMEOUT)
@@ -210,13 +189,6 @@ class T(unittest.TestCase):
                                                   T._drop_every_other_ack_client, 
                                                   T._drop_every_other_ack_server, timeout=10))
         
-    def test_70_ultra(self):
-        for i in range (20):
-            print(f"\n\n\n==============================NEW TEST 70 NR: {i}===============================\n\n\n")
-            self.assertTrue(run_in_separate_processes((), 
-                                                  T._drop_every_other_ack_client, 
-                                                  T._drop_every_other_ack_server, timeout=10))
-
     @staticmethod
     def _drop_every_other_ack_client():
         c = btcp.client_socket.BTCPClientSocket(DEFAULT_WINDOW, DEFAULT_TIMEOUT)
@@ -246,18 +218,6 @@ class T(unittest.TestCase):
                                                   T._drop_every_other_always_client, 
                                                   T._drop_every_other_always_server, timeout=10))
         
-    def test_80_ultra(self): 
-        # In this test both client and server only get retransmissions,
-        # including the segments from the handshakes.
-        #
-        # The barrier is needed here because the server might wait for an ACK on its FIN&ACK,
-        # which the client can't give if its process has exited.
-        for i in range (10):
-            print(f"\n\n\n==============================NEW TEST 80 NR: {i}===============================\n\n\n")
-            self.assertTrue(run_in_separate_processes((), 
-                                                    T._drop_every_other_always_client, 
-                                                    T._drop_every_other_always_server, timeout=10))
-
     @staticmethod
     def _drop_every_other_always_client():
         c = btcp.client_socket.BTCPClientSocket(DEFAULT_WINDOW, DEFAULT_TIMEOUT)
@@ -283,13 +243,6 @@ class T(unittest.TestCase):
                                                   T._reconnect_client, 
                                                   T._reconnect_server, timeout=10))
         
-    def test_90_ultra(self):
-        for i in range (20):
-            print(f"\n\n\n==============================NEW TEST 90 NR: {i}===============================\n\n\n")
-            self.assertTrue(run_in_separate_processes((), 
-                                                  T._reconnect_client, 
-                                                  T._reconnect_server, timeout=10))
-
     @staticmethod
     def _reconnect_client():
         c = btcp.client_socket.BTCPClientSocket(DEFAULT_WINDOW, DEFAULT_TIMEOUT)

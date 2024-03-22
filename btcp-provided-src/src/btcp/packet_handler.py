@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class PacketHandler(ABC):
     def __init__(self, window_size, lossy_layer, ISN):
         self.send_base = 0                          # send base is the head of the window; ie the index of the first element in the window to be send
-        self.current_SN = (ISN+1)%MAX_INT            # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
+        self.current_SN = BTCPSocket.increment(ISN)            # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
         self.expected_ACK_queue = queue.Queue()     # ack queue keeps track of the acks to be received, and in the specified order
         self.seg_queue = queue.Queue()
         self.sender_SN = 0    # initialized to 0 but is updated in the handshake to the 
@@ -53,7 +53,6 @@ class PacketHandler(ABC):
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
 
         n_seg_send = min(self.seg_queue.qsize() * PAYLOAD_SIZE, len(data))  # the number of bytes loaded in queue to send
-        print(f"n_seg_send: {n_seg_send}")
         self.send_window_segments() 
 
         return data[:n_seg_send]
@@ -66,11 +65,11 @@ class PacketHandler(ABC):
         an empty bytes object and depending on the specific handler it might buffer or discard the data recieved.
         """ 
 
-        seq_field, ack_field, flag_byte, _, datalen, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+        seq_field, ack_field, flag_byte, window, datalen, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         payload = segment[HEADER_SIZE:HEADER_SIZE+datalen]
-        
 
         if flag_byte & fACK:
+            self.window_size = max(1, window)
             data = self.handle_ack(ack_field, seq_field)
         else:
             data = self.handle_data(seq_field, payload)
