@@ -53,7 +53,8 @@ class PacketHandler(ABC):
             logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
 
         n_seg_send = min(self.seg_queue.qsize() * PAYLOAD_SIZE, len(data))  # the number of bytes loaded in queue to send
-        self.send_window_segments() 
+        self.send_window_segments()
+        logger.info(f"packethandler n_segment sent is: {n_seg_send}")
 
         return data[:n_seg_send]
 

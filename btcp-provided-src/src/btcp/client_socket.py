@@ -155,7 +155,7 @@ class BTCPClientSocket(BTCPSocket):
         """
         logger.debug("send called")
         if self._state == BTCPStates.ESTABLISHED:
-            return len(self.packet_handler.send_data(data=data))
+            return len(self.packet_handler.send_data(data=data)) 
         return 0
 
 
