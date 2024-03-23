@@ -168,8 +168,10 @@ class BTCPClientSocket(BTCPSocket):
         if self._state != BTCPStates.ESTABLISHED:
             logger.debug("cannot call shutdown when connection is not ESTABLISHED")
         else:
-            while not self.packet_handler.expected_ACK_queue.empty():
+            while (not self.packet_handler.expected_ACK_queue.empty()) or (not self.packet_handler.seg_queue.empty()):
                 time.sleep(0.1)
+            logger.warning("\n"*10 + "WEEOEE")
+            #logger.warning(f"{list(self.packet_handler.expected_ACK_queue.queue)}, {list(self.packet_handler.seg_queue.queue)}")
 
             segment = BTCPSocket.build_segment(seqnum=BTCPSocket.increment(self.packet_handler.current_SN), acknum=0, fin_set=True, window=self._window)
             self._lossy_layer.send_segment(segment)

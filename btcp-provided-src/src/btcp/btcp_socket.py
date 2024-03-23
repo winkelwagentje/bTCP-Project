@@ -43,7 +43,9 @@ class BTCPSocket:
         self._state = new_state
 
     def reset_ISN(self):
-        return r.randint(0,MAX_INT-1)
+        #return r.randint(0,MAX_INT-1)
+        #return MAX_INT-10
+        return MAX_INT//2
 
     @staticmethod
     def in_cksum(segment):                              # calculates the internet checksum over the data

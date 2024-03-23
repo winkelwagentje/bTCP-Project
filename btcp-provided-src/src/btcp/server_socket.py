@@ -134,7 +134,7 @@ class BTCPServerSocket(BTCPSocket):
         if flags == 0:  # no flags
             data = self.packet_handler.handle_rcvd_seg(segment)
             self.packet_handler.window_size = max(1, min(self.packet_handler.window_size, self._recvbuf.maxsize - self._recvbuf.qsize()))
-            logger.debug("server: got the data")
+            logger.warning(f"server: got the data, window: {window}")
             if data:
                 self._recvbuf.put(data)
 
