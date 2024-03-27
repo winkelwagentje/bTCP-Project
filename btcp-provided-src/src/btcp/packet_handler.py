@@ -8,26 +8,38 @@ from btcp.resettable_timer import ResettableTimer
 
 logger = logging.getLogger(__name__)
 
+"""
+This file contains the PacketHandler class. The PacketHandler is an abstract class which handles packets received by a bTCP socket.
+The socket must be in the established state. The PacketHandler handles incomming data-segments and ACKs and ensures the reliability of
+the bTCP protocol. This is implemented in a certain concrete implementation of the class (i.e. GBN).
+"""
 
 class PacketHandler(ABC):
     def __init__(self, window_size, lossy_layer, ISN):
-        self.send_base = 0                          # send base is the head of the window; ie the index of the first element in the window to be send
-        self.current_SN = BTCPSocket.increment(ISN)            # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
-        self.expected_ACK_queue = queue.Queue()     # ack queue keeps track of the acks to be received, and in the specified order
+        self.send_base = 0                                      # send base is the head of the window; ie the index of the first element in the window to be send
+        self.current_SN = BTCPSocket.increment(ISN)             # starting sequence number for the protocol; +1 because we just send 2 segments as client. (3-way handshake)
+        self.expected_ACK_queue = queue.Queue()                 # ack queue keeps track of the acks to be received, and in the specified order
         self.seg_queue = queue.Queue()
-        self.sender_SN = 0    # initialized to 0 but is updated in the handshake to the 
-                               # to the ISN of the other party.
-        self.last_received = 0  # last_received is the sequence number of the last received segment
+        self.sender_SN = 0                                      # initialized to 0 but is updated in the handshake to the to the ISN of the other party.
+                                                
+        self.last_received = 0                                  # last_received is the sequence number of the last received segment
         self.window_size = window_size
         self.lossy_layer = lossy_layer
         self.ack_timer = ResettableTimer(TIMER_TICK/1000, self.timeout)
 
-        self.cur_tries = 0
+        self.cur_tries = 0                                      # tracks the number of timeouts passed by while the window has not been changed
 
-    def send_data(self, data: bytes) -> bytes:       # takes a byte object, turns it into 1008 byte pieces, turns those into segments, sends them
-        pkt_queue = queue.Queue()                    # queue with PAYLOAD_SIZE bytes, except for the last one; possible less than PAYLOAD bytes.
+
+    def send_data(self, data: bytes) -> bytes:
+        """
+        This function receives a data, a bytes object, turns it into 1008 byte packets. Then it makes them into segments and puts
+        them on a queue. In then adds all these segments onto the already established segment queue to be sent to the receiving socket.
+        """
+        pkt_queue = queue.Queue()
         init_data = data
-        try:
+        # FIXME not a fan of this try except; i think it would be better to put the try inside the while loop.
+        # FIXME replace pkt_queue with a list?
+        try:  
             while len(data) > 0:
                 if len(data) >= PAYLOAD_SIZE:
                     pkt_queue.put(data[:PAYLOAD_SIZE])
@@ -36,30 +48,29 @@ class PacketHandler(ABC):
                     pkt_queue.put(data)
                     data = bytes(0)
         except queue.Full:
-            logger.info(f"Too much data for packet queue. {pkt_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
+            # could not fit all segments on the queue
+            pass
             
-        #FIXME: not a fan of this try except; i think it would be better to put the try inside
-        # the while loop.
         nr_bytes_sent = 0
         try:
-            # self.seg_queue = self.build_seg_queue(list(pkt_queue))  # TODO WEEWOO
-            pkt_list = []
-            while not pkt_queue.empty():
-                pkt_list.append(pkt_queue.get())
+            pkt_list = []                         #
+            while not pkt_queue.empty():          # FIXME pkt_list = list(pkt_queue.queue) ?
+                pkt_list.append(pkt_queue.get())  #  
  
             seg_queue_ = self.build_seg_queue(pkt_list)
             while not seg_queue_.empty():
                 self.seg_queue.put(seg_queue_.get())
                 nr_bytes_sent += PAYLOAD_SIZE
-
-        except queue.Full:  # TODO HALLE WEG
-            logger.info(f"Too much data for segment queue. {self.seg_queue.qsize()*PAYLOAD_SIZE} bytes loaded.")
+        except queue.Full:
+            # could not fit all segments on the queue
+            pass
 
         self.send_window_segments() 
 
         return init_data[:nr_bytes_sent]
 
-    def handle_rcvd_seg(self, segment) -> bytes: # handle incoming traffic; differentiate between a packet with the ACK set, and a data packet. 
+
+    def handle_rcvd_seg(self, segment) -> bytes:
         """ 
         A segment is recieved by a socket and unpacked. The payload and part of the unpacked header
         is given as input. This is handled by the specific instance of the handler. This function returns
@@ -71,16 +82,18 @@ class PacketHandler(ABC):
         payload = segment[HEADER_SIZE:HEADER_SIZE+datalen]
 
         if flag_byte & fACK:
-            self.window_size = max(1, window)
+            # received segment is an ACK
+            self.window_size = max(1, window)  # update window size
             data = self.handle_ack(ack_field, seq_field)
         else:
+            # received segment contains data
             data = self.handle_data(seq_field, payload)
 
         return data
 
     
     @abstractmethod
-    def timeout(self):
+    def timeout(self):  # NOTE implement some cases of this function
         """ 
         This functions handles the case where no segments have been recieved for a time or 
         a specific has not been recieved.
@@ -101,7 +114,8 @@ class PacketHandler(ABC):
         """
         This functions sends all segments within the window which the specific handler decides
         to send. This function needs to be called every time the send_base is updated and when
-        the specifc handler needs to send all segments in the window.
+        the specifc handler needs to send all segments in the window. This is also the place which
+        puts new ACKs on the expected ACK queue.
         """
         pass 
 
