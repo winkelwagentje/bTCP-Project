@@ -34,6 +34,10 @@ class BTCPClientSocket(BTCPSocket):
         self._FIN_tries = 0
 
 
+    def lossy_layer_tick_a (self):
+        self.lossy_layer_tick()
+
+
     def lossy_layer_segment_received(self, segment):
         """
         Called by the lossy layer whenever a segment arrives.
@@ -57,22 +61,20 @@ class BTCPClientSocket(BTCPSocket):
         recv SYN|ACK -> send ACK
         """
         seq_num, ack_num, flags, window, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if flags == fSYN+fACK and ack_num == BTCPSocket.increment(self._ISN): # check iff syn and ack flags are set, and if the ack is the expected ack. self.packet_handler.window_size = window
+        if flags == fSYN+fACK and ack_num == BTCPSocket.increment(self._ISN): # check iff syn and ack flags are set, and if the ack is the expected ack. 
             self.packet_handler.window_size = window
             segment = BTCPSocket.build_segment(seqnum=ack_num, acknum=BTCPSocket.increment(seq_num), ack_set=True, window=self._window)
             self._lossy_layer.send_segment(segment)
-
             self._ISN_sender = seq_num  # setting sender ISN
-
             self.update_state(BTCPStates.ESTABLISHED)
 
 
     def _established_segment_received(self, segment):
         seq_num, ack_num, flags, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-        if flags != fSYN + fACK:
+        if flags != fSYN + fACK:                            # ack
             self.packet_handler.handle_rcvd_seg(segment)
-        elif ack_num == BTCPSocket.increment(self._ISN):
-                segment = BTCPSocket.build_segment(seqnum=ack_num, acknum=BTCPSocket.increment(seq_num), ack_set=True, window=self._window)
+        elif ack_num == BTCPSocket.increment(self._ISN):    # syn ack
+                segment = BTCPSocket.build_segment(seqnum=ack_num, acknum=BTCPSocket.increment(seq_num), ack_set=True, window=self._window) # ack the syn|ack
                 self._lossy_layer.send_segment(segment)
     
 
@@ -84,7 +86,7 @@ class BTCPClientSocket(BTCPSocket):
         seq_num, _, flags, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         if flags == fACK:
             self.packet_handler.handle_rcvd_seg(segment)
-        elif flags == fFIN + fACK:
+        elif flags == fFIN + fACK: # ready to close, send ack
             segment = BTCPSocket.build_segment(seqnum=0, acknum=seq_num, ack_set=True, window=self._window)
             self._lossy_layer.send_segment(segment)
 
@@ -100,7 +102,7 @@ class BTCPClientSocket(BTCPSocket):
 
         match self._state:
             case BTCPStates.SYN_SENT:
-                if self._SYN_tries > MAX_TRIES:
+                if self._SYN_tries > MAX_TRIES: # this case represent failing to connect
                     self._SYN_tries = 0
                     self.update_state(BTCPStates.CLOSED)
                 else:
@@ -114,10 +116,10 @@ class BTCPClientSocket(BTCPSocket):
                 # have been no incomming packets, so we do not have to call anything in the socket
                 pass
             case BTCPStates.FIN_SENT:
-                if self._FIN_tries > MAX_TRIES:
+                if self._FIN_tries > MAX_TRIES: # this case represents the server not responding to our fin, so we get out of there and let the server deal with it.
                     self._FIN_tries = 0
                     self.update_state(BTCPStates.CLOSED)
-                else:
+                else:                           # here we retry the fin.
                     self._FIN_tries += 1
                     segment = BTCPSocket.build_segment(seqnum=self.packet_handler.current_SN, acknum=0, fin_set=True, window=self._window)
                     self._lossy_layer.send_segment(segment)
@@ -136,10 +138,10 @@ class BTCPClientSocket(BTCPSocket):
         self._ISN = self.reset_ISN()
         segment = BTCPSocket.build_segment(seqnum=self._ISN, acknum=0, syn_set=True, window=self._window)
 
-        logger.debug("sending a SYN segment")
         self._lossy_layer.send_segment(segment)
         self.update_state(BTCPStates.SYN_SENT)
 
+        # instantiate a RDT protocol and wait until connected (or failed to connect)
         self.packet_handler = GBN(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
             time.sleep(0.1)
@@ -170,12 +172,14 @@ class BTCPClientSocket(BTCPSocket):
             logger.warning("\n"*10 + "WEEOEE")
             #logger.warning(f"{list(self.packet_handler.expected_ACK_queue.queue)}, {list(self.packet_handler.seg_queue.queue)}")
 
+            # prepare a segment which notifies the server we'd like to shutdown the connection.
             segment = BTCPSocket.build_segment(seqnum=BTCPSocket.increment(self.packet_handler.current_SN), acknum=0, fin_set=True, window=self._window)
             self._lossy_layer.send_segment(segment)
 
-            self.packet_handler.current_SN = BTCPSocket.increment(self.packet_handler.current_SN)
+            self.packet_handler.current_SN = BTCPSocket.increment(self.packet_handler.current_SN) # increment is modulo MAX_INT
             self.update_state(BTCPStates.FIN_SENT)
 
+            # wait till other thread puts us in the CLOSED state
             while not self._state == BTCPStates.CLOSED:
                 time.sleep(0.1)
 
