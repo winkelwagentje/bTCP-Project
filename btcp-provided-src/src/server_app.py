@@ -3,6 +3,8 @@
 import argparse
 import logging
 from btcp.server_socket import BTCPServerSocket
+from btcp.hybrid_socket import BTCPHybridSocket
+from btcp.constants import *
 
 """This exposes a constant bytes object called TEST_BYTES_85MIB which, as the
 name suggests, is a little over 85 MiB in size. You can send it, receive it,
@@ -72,7 +74,9 @@ def btcp_file_transfer_server():
 
     # Create a bTCP server socket
     logger.info("Creating server socket")
-    s = BTCPServerSocket(args.window, args.timeout)
+    # s = BTCPServerSocket(args.window, args.timeout)
+    s = BTCPHybridSocket(args.window, args.timeout, SERVER_IP, SERVER_PORT, CLIENT_IP, CLIENT_PORT)
+
 
     # Accept the connection. By default this doesn't actually do anything: our
     # rudimentary implementation relies on you starting the server before the

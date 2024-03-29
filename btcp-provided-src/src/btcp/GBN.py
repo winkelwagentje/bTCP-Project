@@ -45,13 +45,13 @@ class GBN(PacketHandler):
                 pass
             else:
                 self.lossy_layer.send_segment(segment)
-                seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+                seq, *_ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
                 self.update_ack_queue(seq)
 
         return
 
 
-    def handle_ack(self, ack_field: int, seq_field: int):
+    def handle_ack(self, ack_field: int, seq_field: int):  # TODO seq_field
         # This functions handles an ACK message following the GBN protocol. 
         # So, if the ACK is in-order meaning not lower than the first expected ACK, remove
         # all the ACKs, which are lower than the ACK recieved, from the expected ACK queue. 
@@ -68,7 +68,7 @@ class GBN(PacketHandler):
                     while not self.seg_queue.empty():
                         # Now all ACKed segments are removed from the segment queue so they will not be send again at a time-out
                         segment = self.seg_queue.queue[0]
-                        seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
+                        seq, *_ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
                         if  (seq <= ack_field and abs(seq - ack_field) < MAX_DIFF) \
                             or (seq >= ack_field and abs(seq - ack_field) > MAX_DIFF):  #seq <= ack_field, taking overflow into account
                             self.seg_queue.get()

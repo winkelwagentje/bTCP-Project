@@ -4,7 +4,6 @@ from enum import IntEnum
 from btcp.constants import *
 import random as r
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -36,8 +35,6 @@ class BTCPSocket:
         self._ISN_sender = 0
         logger.debug("Socket initialized with window %i and timeout %i",
                      self._window, self._timeout)
-
-
 
     def update_state(self, new_state):
         self._state = new_state

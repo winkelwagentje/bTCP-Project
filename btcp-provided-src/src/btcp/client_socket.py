@@ -34,10 +34,6 @@ class BTCPClientSocket(BTCPSocket):
         self._FIN_tries = 0
 
 
-    def lossy_layer_tick_a (self):
-        self.lossy_layer_tick()
-
-
     def lossy_layer_segment_received(self, segment):
         """
         Called by the lossy layer whenever a segment arrives.
@@ -140,6 +136,7 @@ class BTCPClientSocket(BTCPSocket):
         self._ISN = self.reset_ISN()
         segment = BTCPSocket.build_segment(seqnum=self._ISN, acknum=0, syn_set=True, window=self._window)
 
+        logger.debug("sending a SYN segment")
         self._lossy_layer.send_segment(segment)
         self.update_state(BTCPStates.SYN_SENT)
 

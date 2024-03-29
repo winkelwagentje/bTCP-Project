@@ -26,9 +26,6 @@ class BTCPServerSocket(BTCPSocket):
         self._SYN_tries = 0
         self._accept_tries = 0
 
-    def lossy_layer_tick_a (self):
-        self.lossy_layer_tick()
-
     def lossy_layer_segment_received(self, segment):
         logger.debug("lossy_layer_segment_received called")
         # TODO: packet_handler may not be set to a packet_handler yet and still is None
@@ -95,7 +92,7 @@ class BTCPServerSocket(BTCPSocket):
         elif flags == 0 and not self._fin_received_in_closing and ((seq_num < self.packet_handler.last_received and abs(seq_num - self.packet_handler.last_received) < MAX_DIFF) \
                                                                    or (seq_num > self.packet_handler.last_received and abs(seq_num - self.packet_handler.last_received) > MAX_DIFF)):    # seq_num < pkt_handler.last_rvcd no flags set, and not yet received a FIN
             # construct a ... TODO
-            segment = BTCPServerSocket.build_segment(seqnum=BTCPSocket.increment(self.packet_handler.current_SN), acknum=seq_num, ack_set=True, window=self._window)
+            segment = BTCPSocket.build_segment(seqnum=BTCPSocket.increment(self.packet_handler.current_SN), acknum=seq_num, ack_set=True, window=self._window)
 
 
             # update all constants and values
@@ -106,7 +103,6 @@ class BTCPServerSocket(BTCPSocket):
 
 
     def _syn_segment_received(self, segment):
-
         logger.debug("_syn_segment_received called")
         logger.info("Segment received in %s state",
                     self._state)

@@ -4,6 +4,8 @@ import argparse
 import time
 import logging
 from btcp.client_socket import BTCPClientSocket
+from btcp.hybrid_socket import BTCPHybridSocket
+from btcp.constants import *
 
 """This exposes a constant bytes object called TEST_BYTES_85MIB which, as the
 name suggests, is a little over 85 MiB in size. You can send it, receive it,
@@ -73,7 +75,8 @@ def btcp_file_transfer_client():
 
     # Create a bTCP client socket with the given window size and timeout value
     logger.info("Creating client socket")
-    s = BTCPClientSocket(args.window, args.timeout)
+    # s = BTCPClientSocket(args.window, args.timeout)
+    s = BTCPHybridSocket(args.window, args.timeout, CLIENT_IP, CLIENT_PORT, SERVER_IP, SERVER_PORT)
 
     # Connect. By default this doesn't actually do anything: our rudimentary
     # implementation relies on you starting the server before the client,

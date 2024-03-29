@@ -62,6 +62,7 @@ class LossyLayer:
                     segment, address = udp_socket.recvfrom(SEGMENT_SIZE)
                     
                     with self._handler_lock:
+                        logger.debug("got something in the rlist")
                         self._handler_stack[-1].segment_received(segment)
 
                     # We *assume* here that students aren't leaving multiple processes
@@ -208,6 +209,7 @@ class BottomHandler:
 
     def send_segment(self, segment):
         # we do not log here on purpose
+        logger.debug(f"putting on the udp ip {self._lossy_layer._remote_ip}, port {self._lossy_layer._remote_port}")
         bytes_sent = self._lossy_layer._udp_socket.sendto(segment,
                                              (self._lossy_layer._remote_ip,
                                               self._lossy_layer._remote_port))
@@ -217,6 +219,7 @@ class BottomHandler:
                             bytes_sent)
 
     def segment_received(self, segment):
+        logger.debug("passing the segment to the appropriate btcp socket")
         self._lossy_layer._bTCP_socket.lossy_layer_segment_received(segment)
 
     def tick(self):
