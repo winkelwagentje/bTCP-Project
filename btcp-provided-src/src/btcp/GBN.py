@@ -108,15 +108,6 @@ class GBN(PacketHandler):
         return     
 
 
-    def build_ack_queue(self): # TODO DEZE FUNCTIE WORDT NOOIT GECALLED
-        logger.warning("saying hi from the build_ack_queue")
-        # Implement the logic to build the acknowledgment queue for GBN
-        cpy_seg = list(self.seg_queue)
-        for segment in cpy_seg:
-            seq, _, _, _, _, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-            self.expected_ACK_queue.put(seq)
-
-
     def update_ack_queue(self, seq_num: int) -> None:
         # This function puts a given sequence number, seq_num on the expected ACK queue
 
@@ -140,22 +131,3 @@ class GBN(PacketHandler):
             else:
                 # found an ACK bigger than the seq_num, so stop removing ACKs
                 break
-
-
-    def timeout(self) -> None:  # NOTE a big part of this function can probably be moved to the packet handler
-        self.window_size = max(self.window_size//2, 1)
-        if self.seg_queue.empty() and self.expected_ACK_queue.empty():
-            self.ack_timer.stop()
-            return
-        elif self.cur_tries < MAX_TRIES:
-            self.send_window_segments()
-            #logger.warning(f"timeout, sending {list(self.seg_queue.queue)} ")
-            self.cur_tries += 1
-            return
-        elif self.cur_tries >= MAX_TRIES:
-            # no acks received for MAX_TRIES times timeout so abandon this data sending
-            self.seg_queue = queue.Queue()
-            self.expected_ACK_queue = queue.Queue()
-            self.ack_timer.stop()
-            logger.warning("GBN: emptying queues")
-            return

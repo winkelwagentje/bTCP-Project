@@ -35,35 +35,27 @@ class PacketHandler(ABC):
         This function receives a data, a bytes object, turns it into 1008 byte packets. Then it makes them into segments and puts
         them on a queue. In then adds all these segments onto the already established segment queue to be sent to the receiving socket.
         """
-        pkt_queue = queue.Queue()
+        pkt_list = []
         init_data = data
-        # FIXME not a fan of this try except; i think it would be better to put the try inside the while loop.
-        # FIXME replace pkt_queue with a list?
-        try:  
-            while len(data) > 0:
+        
+        while len(data) > 0:
                 if len(data) >= PAYLOAD_SIZE:
-                    pkt_queue.put(data[:PAYLOAD_SIZE])
+                    pkt_list.append(data[:PAYLOAD_SIZE])
                     data = data[PAYLOAD_SIZE:]
                 else:
-                    pkt_queue.put(data)
+                    pkt_list.append(data)
                     data = bytes(0)
-        except queue.Full:
-            # could not fit all segments on the queue
-            pass
-            
+
         nr_bytes_sent = 0
-        try:
-            pkt_list = []                         #
-            while not pkt_queue.empty():          # FIXME pkt_list = list(pkt_queue.queue) ?
-                pkt_list.append(pkt_queue.get())  #  
- 
-            seg_queue_ = self.build_seg_queue(pkt_list)
-            while not seg_queue_.empty():
+
+        seg_queue_ = self.build_seg_queue(pkt_list)
+        while not seg_queue_.empty():
+            try:
                 self.seg_queue.put(seg_queue_.get())
                 nr_bytes_sent += PAYLOAD_SIZE
-        except queue.Full:
-            # could not fit all segments on the queue
-            pass
+            except queue.Full:
+                # could not fit all segments on the queue
+                pass
 
         self.send_window_segments() 
 
@@ -92,13 +84,22 @@ class PacketHandler(ABC):
         return data
 
     
-    @abstractmethod
-    def timeout(self):  # NOTE implement some cases of this function
+    def timeout(self):  # NOTE comments v
         """ 
         This functions handles the case where no segments have been recieved for a time or 
         a specific has not been recieved.
         """
-        pass
+        self.window_size = max(self.window_size//2, 1)
+        if self.seg_queue.empty() and self.expected_ACK_queue.empty():
+            self.ack_timer.stop()
+        elif self.cur_tries < MAX_TRIES:
+            self.send_window_segments()
+            self.cur_tries += 1
+        elif self.cur_tries >= MAX_TRIES:
+            # no acks received for MAX_TRIES times timeout so abandon this data sending
+            self.seg_queue = queue.Queue()
+            self.expected_ACK_queue = queue.Queue()
+            self.ack_timer.stop()
 
 
     @abstractmethod
@@ -139,15 +140,6 @@ class PacketHandler(ABC):
         There is also an ACK send, which again is based on the specific handler.
         '''
         pass 
-
-    @abstractmethod
-    def build_ack_queue(self) -> None:  
-        ''' 
-        the purpose of the ack queue is holding the acknumbers of the to be expected acks
-        if the received ack is not equal to the first element in the queue with acks, the packets are out of order.
-        Though, this function just builds the ack queue.
-        '''
-        pass
 
     @abstractmethod
     def update_ack_queue(self, seq_num: int) -> None:
