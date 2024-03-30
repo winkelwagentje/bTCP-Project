@@ -35,24 +35,30 @@ class PacketHandler(ABC):
         This function receives a data, a bytes object, turns it into 1008 byte packets. Then it makes them into segments and puts
         them on a queue. In then adds all these segments onto the already established segment queue to be sent to the receiving socket.
         """
+        logger.info("send_data called")
+
         pkt_list = []
         init_data = data
         
-        while len(data) > 0:
+        while len(data) > 0:  # converting data to packets and adding to the queue
                 if len(data) >= PAYLOAD_SIZE:
                     pkt_list.append(data[:PAYLOAD_SIZE])
                     data = data[PAYLOAD_SIZE:]
                 else:
+                    # last packet has been created
                     pkt_list.append(data)
                     data = bytes(0)
 
-        nr_bytes_sent = 0
+        nr_bytes_sent = 0 
 
         seg_queue_ = self.build_seg_queue(pkt_list)
-        while not seg_queue_.empty():
+        while not seg_queue_.empty():  # putting all seqments in the build queue in the actual seq_queue
             try:
                 self.seg_queue.put(seg_queue_.get())
-                nr_bytes_sent += PAYLOAD_SIZE
+                nr_bytes_sent += PAYLOAD_SIZE 
+                # every segment except for the last segment contains PAYLOAD_SIZE number of bytes
+                # if also the segment is put on the queue then nr_bytes_sent is bigger than it should be
+                # but Python slicing handles this as my_list[len(my_list)+1] = []
             except queue.Full:
                 # could not fit all segments on the queue
                 pass
@@ -69,34 +75,47 @@ class PacketHandler(ABC):
         the data recieved in correct order. If a call contains not in-order data the function will return 
         an empty bytes object and depending on the specific handler it might buffer or discard the data recieved.
         """ 
+        logger.info("handle_rcvd_seg called")
 
         seq_field, ack_field, flag_byte, window, datalen, _ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
         payload = segment[HEADER_SIZE:HEADER_SIZE+datalen]
 
         if flag_byte & fACK:
             # received segment is an ACK
+            logger.debug("received segment is an ACK")
             self.window_size = max(1, window)  # update window size
-            data = self.handle_ack(ack_field, seq_field)
+            data = self.handle_ack(ack_field)
         else:
             # received segment contains data
+            logger.debug("received segment contains data")
             data = self.handle_data(seq_field, payload)
 
         return data
 
     
-    def timeout(self):  # NOTE comments v
+    def timeout(self):
         """ 
         This functions handles the case where no segments have been recieved for a time or 
         a specific has not been recieved.
         """
-        self.window_size = max(self.window_size//2, 1)
+        logger.info("timeout called")
+
+        # timeout is called so we assume the receiver might be very bussy, so half the window size
+        self.window_size = max(self.window_size//2, 1) 
+
         if self.seg_queue.empty() and self.expected_ACK_queue.empty():
+            # there is nothing to send or receive so the packet_handler is basically idle.
+            # so we can stop the timer as to not keep getting timeouts
             self.ack_timer.stop()
         elif self.cur_tries < MAX_TRIES:
+            # the number of timeouts without a sendbase change is less than MAX_TRIES
+            # this means we still assume the connection is fine.
             self.send_window_segments()
             self.cur_tries += 1
         elif self.cur_tries >= MAX_TRIES:
-            # no acks received for MAX_TRIES times timeout so abandon this data sending
+            # no acks received for MAX_TRIES times timeout. We conclude the connection is
+            # very flawed. We empty all queues and stop the timer.
+            logger.warning("very bad connection detected, all data cleared.")
             self.seg_queue = queue.Queue()
             self.expected_ACK_queue = queue.Queue()
             self.ack_timer.stop()
@@ -121,7 +140,7 @@ class PacketHandler(ABC):
         pass 
 
     @abstractmethod
-    def handle_ack(self, ack_field: int, seq_field: int):
+    def handle_ack(self, ack_field: int):
         """
         This function handles incoming messages with an ACK flag. It checks if the ACK is in order.
         If it is the send_base, and the ack_queue is updated in handle_ack_queue.

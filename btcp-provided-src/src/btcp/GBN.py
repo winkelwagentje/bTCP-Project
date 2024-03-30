@@ -17,6 +17,7 @@ class GBN(PacketHandler):
     def build_seg_queue(self, pkt_list: list[bytes]) -> queue.Queue[bytes]:
         # Given a list of data packets (of max PAYLOAD_SIZE bytes) this function creates a queue of segments, 
         # where each segment contains the data of a packet. This queue is then returned.
+        logger.info("build_seg_queue called")
 
         seg_queue = queue.Queue()
 
@@ -36,7 +37,8 @@ class GBN(PacketHandler):
 
     def send_window_segments(self) -> None:
         # This functions sends all segments, in the segment queue, which fit in the current window
-        
+        logger.info("send_window_segments called")
+
         self.ack_timer.reset()
         for i in range(min(self.seg_queue.qsize(), self.window_size)): 
             try:
@@ -51,16 +53,18 @@ class GBN(PacketHandler):
         return
 
 
-    def handle_ack(self, ack_field: int, seq_field: int):  # TODO seq_field
+    def handle_ack(self, ack_field: int):
         # This functions handles an ACK message following the GBN protocol. 
         # So, if the ACK is in-order meaning not lower than the first expected ACK, remove
         # all the ACKs, which are lower than the ACK recieved, from the expected ACK queue. 
+        logger.info("handle_ack called")
 
         if self.expected_ACK_queue.qsize() > 0:  # check that there are ACKs to accept
+            logger.debug("expected ACK queue is not empty")
             expected_ack = self.expected_ACK_queue.queue[0]
 
-            if (expected_ack <= ack_field and abs(expected_ack - ack_field) < MAX_DIFF) \
-                or (expected_ack >= ack_field and abs(expected_ack - ack_field) > MAX_DIFF):  # ack_field >= expected_ack, taking overflow into account
+            if BTCPSocket.le(expected_ack, ack_field):
+                logger.debug("ack is in-order, removin ACKs...")
                 # received an ack in-order
 
                 self.cur_tries = 0  # we got an in-order ACK so we can reset cur_tries as we conclude that the connection is still valid.
@@ -69,8 +73,7 @@ class GBN(PacketHandler):
                         # Now all ACKed segments are removed from the segment queue so they will not be send again at a time-out
                         segment = self.seg_queue.queue[0]
                         seq, *_ = BTCPSocket.unpack_segment_header(segment[:HEADER_SIZE])
-                        if  (seq <= ack_field and abs(seq - ack_field) < MAX_DIFF) \
-                            or (seq >= ack_field and abs(seq - ack_field) > MAX_DIFF):  #seq <= ack_field, taking overflow into account
+                        if BTCPSocket.le(seq, ack_field):
                             self.seg_queue.get()
                         else:
                             break
@@ -88,8 +91,10 @@ class GBN(PacketHandler):
         # If the segment is in-order, meaning the sequence number 1 higher than the last recieved sequence number,
         # we return the payload. If it is not in-order and the sequence number is lower then we expect than apparently the
         # other side still requires an ACK and thus we send this ACK. 
+        logger.info("handle_data called")
 
         if seq_field == BTCPSocket.increment(self.last_received): 
+            logger.debug("segment received is in-order, sending an ACK and returning its payload.")
             # segment recieved is in-order
 
             # send an ACK
@@ -98,8 +103,8 @@ class GBN(PacketHandler):
             self.last_received = BTCPSocket.increment(self.last_received)
 
             return payload
-        if (seq_field < BTCPSocket.increment(self.last_received) and abs(seq_field - BTCPSocket.increment(self.last_received)) < MAX_DIFF) \
-                or (seq_field > BTCPSocket.increment(self.last_received) and abs(seq_field - BTCPSocket.increment(self.last_received)) > MAX_DIFF): # retransmit the ack seq_field < last_rcvd + 1
+        if BTCPSocket.lt(seq_field, BTCPSocket.increment(self.last_received)):
+            logger.debug("segment received was an old segment, sending an ACK.")
             # received an old segment
 
             # send an ACK 
@@ -110,6 +115,7 @@ class GBN(PacketHandler):
 
     def update_ack_queue(self, seq_num: int) -> None:
         # This function puts a given sequence number, seq_num on the expected ACK queue
+        logger.info("update_ack_queue called")
 
         try:
             self.expected_ACK_queue.put(seq_num)
@@ -121,12 +127,12 @@ class GBN(PacketHandler):
         # This function removes all ACKs in the expected ACK queue lower or equal to the given sequence number.
         # The function assumes the ACK queue is in-order to the extend that it will stop looking in the ACK queue
         # when it finds a sequence number bigger to seq_num (or the queue is empty). This is important for overflow.
+        logger.info("acknowledge_number called")
 
         while not self.expected_ACK_queue.empty():
             head = self.expected_ACK_queue.queue[0]  # Get the first element without de-queueing
             
-            if (head <= seq_num and abs(head - seq_num) < MAX_DIFF) \
-                or (head >= seq_num and abs(head - seq_num) > MAX_DIFF): # head <= seq_num, taking overflow into account
+            if BTCPSocket.le(head, seq_num):
                 self.expected_ACK_queue.get()
             else:
                 # found an ACK bigger than the seq_num, so stop removing ACKs

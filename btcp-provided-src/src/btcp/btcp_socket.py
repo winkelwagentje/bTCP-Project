@@ -94,4 +94,25 @@ class BTCPSocket:
     @staticmethod
     def increment(var, incr=1, mod=MAX_INT):
         return (var+incr) % mod
+    
+    @staticmethod
+    def lt(a: int, b: int) -> bool:
+        # returns a < b taking into account overflow
+        return (a < b and abs(a - b) < MAX_DIFF) or (a > b and abs(a - b) > MAX_DIFF)
+    
+    @staticmethod
+    def le(a: int, b: int) -> bool:
+        # returns a <= b taking into account overflow
+        return BTCPSocket.lt(a, b) or a == b
+    
+    @staticmethod
+    def gt(a: int, b: int) -> bool:
+        # returns a > b taking into account overflow
+        return not BTCPSocket.le(a, b)
+
+    @staticmethod
+    def ge(a: int, b: int) -> bool:
+        # returns a >= b taking into account overflow
+        return not BTCPSocket.lt(a,b)
+
 
