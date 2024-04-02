@@ -1,7 +1,6 @@
 output.file
 testframework-output.file
 __pycache__
-test_output.file
 
 # (Note to teachers:  please keep contents in sync with `src-impl/.gitignore`.)
 
