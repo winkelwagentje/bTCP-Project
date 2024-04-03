@@ -18,5 +18,10 @@ class ResettableTimer:
         self.timer.cancel()
         self.timer_stopped = True
 
+    def start(self):
+        if not self.timer.is_alive():
+            self.timer.start()
+            
+
     def is_stopped(self):
         return self.timer_stopped

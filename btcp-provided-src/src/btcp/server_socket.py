@@ -2,6 +2,7 @@ from btcp.btcp_socket import BTCPSocket, BTCPStates
 from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
 from btcp.GBN import GBN
+from btcp.SR import SR
 
 import queue
 import time
@@ -168,6 +169,7 @@ class BTCPServerSocket(BTCPSocket):
             self.packet_handler.window_size = max(1, min(self.packet_handler.window_size, self._recvbuf.maxsize - self._recvbuf.qsize()))
 
             if data:  
+                logger.debug(f"data rcvd: {data}")
                 # if data is not empty then we put it on the receive buffer, 
                 # otherwise b'' or None is put on the rcv buffer which might end the recv function prematurely.
                 self._recvbuf.put(data)
@@ -230,7 +232,7 @@ class BTCPServerSocket(BTCPSocket):
         
         self._state = BTCPStates.ACCEPTING
         self._ISN = self.reset_ISN()
-        self.packet_handler = GBN(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
+        self.packet_handler = SR(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
         while self._state != BTCPStates.CLOSED and self._state != BTCPStates.ESTABLISHED:
             time.sleep(0.1)
 

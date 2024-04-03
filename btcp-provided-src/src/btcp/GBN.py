@@ -59,12 +59,12 @@ class GBN(PacketHandler):
         # all the ACKs, which are lower than the ACK recieved, from the expected ACK queue. 
         logger.info("handle_ack called")
 
-        if self.expected_ACK_queue.qsize() > 0:  # check that there are ACKs to accept
+        if not self.expected_ACK_queue.empty():  # check that there are ACKs to accept
             logger.debug("expected ACK queue is not empty")
             expected_ack = self.expected_ACK_queue.queue[0]
 
             if BTCPSocket.le(expected_ack, ack_field):
-                logger.debug("ack is in-order, removin ACKs...")
+                logger.debug("ack is in-order, removing ACKs...")
                 # received an ack in-order
 
                 self.cur_tries = 0  # we got an in-order ACK so we can reset cur_tries as we conclude that the connection is still valid.

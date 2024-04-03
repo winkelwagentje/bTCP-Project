@@ -2,6 +2,7 @@ from btcp.btcp_socket import BTCPSocket, BTCPStates
 from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
 from btcp.GBN import GBN
+from btcp.SR import SR
 
 import time
 import queue
@@ -292,7 +293,7 @@ class BTCPHybridSocket(BTCPSocket):
         
         self._state = BTCPStates.ACCEPTING
         self._ISN = self.reset_ISN()
-        self.packet_handler = GBN(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
+        self.packet_handler = SR(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
         while self._state != BTCPStates.CLOSED and self._state != BTCPStates.ESTABLISHED:
             time.sleep(0.1)
 
@@ -343,7 +344,7 @@ class BTCPHybridSocket(BTCPSocket):
         self._lossy_layer.send_segment(segment)
         self.update_state(BTCPStates.SYN_SENT)
 
-        self.packet_handler = GBN(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
+        self.packet_handler = SR(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
             time.sleep(0.1)
 

@@ -32,7 +32,7 @@ import os
 
 DEFAULT_WINDOW = 10 
 DEFAULT_TIMEOUT = 2_000 # ms
-DEFAULT_LOGLEVEL = 'WARNING'
+DEFAULT_LOGLEVEL = 'DEBUG'
 
 logger = logging.getLogger(os.path.basename(__file__)) # we don't want __main__
 

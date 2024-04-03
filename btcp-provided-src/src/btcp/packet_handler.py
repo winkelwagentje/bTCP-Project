@@ -154,7 +154,7 @@ class PacketHandler(ABC):
         '''
         This function handles incomming messages without an ACK flag, and thus this is a segment with data.
         If the data segment is in-order then this segment or possibly a buffer of data (depending on the specific handler) 
-        is sent back, the socket may assume all data recieved from the packet_handler is in order.
+        is sent back, the socket may assume all data received from the packet_handler is in order.
         If the data segment in out of order the way to handle is handler specific.
         There is also an ACK send, which again is based on the specific handler.
         '''

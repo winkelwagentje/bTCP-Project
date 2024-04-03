@@ -2,6 +2,7 @@ from btcp.btcp_socket import BTCPSocket, BTCPStates
 from btcp.lossy_layer import LossyLayer
 from btcp.constants import *
 from btcp.GBN import GBN
+from btcp.SR import SR
 
 import time
 import queue
@@ -142,7 +143,7 @@ class BTCPClientSocket(BTCPSocket):
         self.update_state(BTCPStates.SYN_SENT)
 
         # instantiate a RDT protocol and wait until connected (or failed to connect)
-        self.packet_handler = GBN(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
+        self.packet_handler = SR(window_size=self._window, lossy_layer=self._lossy_layer, ISN=self._ISN)
         while self._state != BTCPStates.ESTABLISHED and self._state != BTCPStates.CLOSED:
             time.sleep(0.1)
 
@@ -167,9 +168,11 @@ class BTCPClientSocket(BTCPSocket):
         if self._state != BTCPStates.ESTABLISHED:
             logger.debug("cannot call shutdown when connection is not ESTABLISHED")
         else:
+            logger.debug("waiting to shutdown")
             while (not self.packet_handler.expected_ACK_queue.empty()) or (not self.packet_handler.seg_queue.empty()):
+                #logger.debug(f"exptd ack q {self.packet_handler.expected_ACK_queue.queue}, seg q {self.packet_handler.seg_queue.queue}")
                 time.sleep(0.1)
-            logger.warning("\n"*10 + "WEEOEE")
+            logger.debug("wait ended, shutting down")
             #logger.warning(f"{list(self.packet_handler.expected_ACK_queue.queue)}, {list(self.packet_handler.seg_queue.queue)}")
 
             # prepare a segment which notifies the server we'd like to shutdown the connection.
